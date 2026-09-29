@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>苫米地理論・定理データベース（マスター連動版）</title>
+  <!-- MathJax for rendering LaTeX formulas -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  
+  <!-- PapaParse for robust CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-bg: #eff6ff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e5e7eb;
+      --badge-unpub: #f3f4f6;
+      --badge-unpub-text: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding-bottom: 40px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus {
+      border-color: var(--primary);
+    }
+
+    .filter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .container {
+      padding: 12px 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .card.is-unpublished {
+      opacity: 0.65;
+      background: #fafafa;
+    }
+
+    .card-header {
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .theorem-id {
+      background: var(--primary-bg);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .is-unpublished .theorem-id {
+      background: var(--badge-unpub);
+      color: var(--badge-unpub-text);
+    }
+
+    .theorem-title {
+      font-weight: 600;
+      font-size: 0.98rem;
+      flex-grow: 1;
+      line-height: 1.4;
+    }
+
+    .card-body {
+      padding: 0 14px 14px 14px;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+
+    .formula-box {
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      overflow-x: auto;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    .description {
+      font-size: 0.9rem;
+      color: #334155;
+      margin-bottom: 8px;
+      white-space: pre-line;
+    }
+
+    .source-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .status-msg {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>苫米地理論 定理データベース</h1>
+  <div class="controls">
+    <input type="text" id="searchInput" class="search-box" placeholder="検索（番号・名称・数式・説明）...">
+    <div class="filter-row">
+      <label class="toggle-label">
+        <input type="checkbox" id="hideUnpubToggle" checked> 未公開・欠番を隠す
+      </label>
+      <span id="countDisplay">読み込み中...</span>
+    </div>
+  </div>
+</header>
+
+<main class="container" id="theoremList">
+  <div class="status-msg" id="statusMsg">Googleスプレッドシートから最新データを同期中...</div>
+</main>
+
+<script>
+// 指定されたGoogleスプレッドシートの公開CSV URL
+const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO4Uqo3PADT7h4jXnz4Hv3CvaA9u36gLZD-iFZIPgkLxJ3QXfeOOVKdWV8b-JmQkoSHPdzGJBPa5un/pub?gid=0&single=true&output=csv";
+
+let theorems = [];
+
+async function fetchCSVData() {
+  try {
+    let csvText = "";
+    try {
+      // 1. 直接取得を試みる
+      const res = await fetch(SPREADSHEET_CSV_URL);
+      if (!res.ok) throw new Error("Direct fetch failed");
+      csvText = await res.text();
+    } catch (e) {
+      // 2. CORS回避用プロキシ経由で取得（フォールバック）
+      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SPREADSHEET_CSV_URL);
+      const resProxy = await fetch(proxyUrl);
+      if (!resProxy.ok) throw new Error("Proxy fetch failed");
+      csvText = await resProxy.text();
+    }
+
+    parseCSV(csvText);
+  } catch (err) {
+    document.getElementById('statusMsg').textContent = "データの取得に失敗しました。スプレッドシートの共有設定を確認してください。";
+    console.error(err);
+  }
+}
+
+function parseCSV(csvText) {
+  Papa.parse(csvText, {
+    header: false,
+    skipEmptyLines: true,
+    complete: function(results) {
+      const rows = results.data;
+      if (!rows || rows.length === 0) return;
+
+      // ヘッダー行をスキップしマッピング
+      // 列構成: 0:番号, 1:定理名, 2:中心式, 3:何の定理か, 4:参照元
+      theorems = rows.slice(1).map(row => {
+        const id = (row[0] || "").trim();
+        const name = (row[1] || "").trim();
+        const formula = (row[2] || "").trim();
+        const desc = (row[3] || "").trim();
+        const source = (row[4] || "").trim();
+
+        const isUnpublished = name.includes("未公開") || name.includes("欠番") || (!formula && !desc);
+
+        return {
+          id: id,
+          name: name,
+          formula: formula,
+          desc: desc,
+          source: source,
+          status: isUnpublished ? 'unpublished' : 'published'
+        };
+      });
+
+      renderTheorems();
+    }
+  });
+}
+
+function renderTheorems() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  const hideUnpub = document.getElementById('hideUnpubToggle').checked;
+  const listEl = document.getElementById('theoremList');
+  
+  listEl.innerHTML = '';
+  let visibleCount = 0;
+
+  theorems.forEach(item => {
+    if (hideUnpub && item.status === 'unpublished') {
+      return;
+    }
+
+    const searchText = `${item.id} ${item.name} ${item.formula} ${item.desc} ${item.source}`.toLowerCase();
+    if (query && !searchText.includes(query)) {
+      return;
+    }
+
+    visibleCount++;
+
+    const card = document.createElement('div');
+    card.className = `card ${item.status === 'unpublished' ? 'is-unpublished' : ''}`;
+    
+    // LaTeX形式に調整
+    let formulaHtml = item.formula ? `<div class="formula-box">$$\\small ${escapeMath(item.formula)}$$</div>` : '';
+    let descHtml = item.desc ? `<div class="description">${escapeHtml(item.desc)}</div>` : '';
+    let sourceHtml = item.source ? `<span class="source-tag">${escapeHtml(item.source)}</span>` : '';
+
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="theorem-id">${escapeHtml(item.id)}</span>
+        <div class="theorem-title">${escapeHtml(item.name)}</div>
+      </div>
+      ${(item.formula || item.desc || item.source) ? `
+        <div class="card-body">
+          ${formulaHtml}
+          ${descHtml}${sourceHtml}
+        </div>
+      ` : ''}
+    `;
+
+    listEl.appendChild(card);
+  });
+
+  document.getElementById('countDisplay').textContent = `${visibleCount} 件表示`;
+
+  if (visibleCount === 0) {
+    listEl.innerHTML = '<div class="status-msg">該当する定理が見つかりませんでした。</div>';
+  }
+
+  // 数式描画のリフレッシュ
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise();
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function escapeMath(str) {
+  return str.replace(/⟶/g, "\\longrightarrow ").replace(/⟹/g, "\\implies ");
+}
+
+document.getElementById('searchInput').addEventListener('input', renderTheorems);
+document.getElementById('hideUnpubToggle').addEventListener('change', renderTheorems);
+
+// 初回データ読み込み
+fetchCSVData();
+</script>
+</body>
+</html>
