@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>苫米地理論・定理データベース（マスター連動版）</title>
-  <!-- MathJax for rendering LaTeX formulas -->
+  <title>苫米地定理一覧</title>
+  <!-- MathJax Config -->
   <script>
     window.MathJax = {
       tex: {
@@ -15,331 +15,345 @@
     };
   </script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  
-  <!-- PapaParse for robust CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-bg: #eff6ff;
-      --text-main: #1f2937;
-      --text-muted: #6b7280;
-      --bg-main: #f8fafc;
+      --bg-color: #f1f3f8;
       --card-bg: #ffffff;
-      --border: #e5e7eb;
-      --badge-unpub: #f3f4f6;
-      --badge-unpub-text: #9ca3af;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --badge-bg: #e0e7ff;
+      --badge-text: #3b82f6;
+      --formula-bg: #f8fafc;
+      --link-blue: #2563eb;
+      --border-color: #e2e8f0;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg-main);
+      background-color: var(--bg-color);
       color: var(--text-main);
-      line-height: 1.6;
-      padding-bottom: 40px;
+      line-height: 1.5;
+      padding: 24px 16px 48px;
     }
 
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 16px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-
-    h1 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 8px;
-    }
-
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .search-box {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .search-box:focus {
-      border-color: var(--primary);
-    }
-
-    .filter-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .toggle-label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-
-    .container {
-      padding: 12px 16px;
-      max-width: 800px;
+    .app-container {
+      max-width: 960px;
       margin: 0 auto;
     }
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      margin-bottom: 12px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    /* Page Header */
+    .page-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 4px;
     }
 
-    .card.is-unpublished {
-      opacity: 0.65;
-      background: #fafafa;
+    .page-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* Search & Controls */
+    .controls-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 280px;
+      padding: 10px 16px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .search-input:focus { border-color: var(--link-blue); }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .count-status {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* Grid Layout */
+    .theorem-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .theorem-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Card Component */
+    .theorem-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .card-header {
-      padding: 12px 14px;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 10px;
     }
 
-    .theorem-id {
-      background: var(--primary-bg);
-      color: var(--primary);
+    .theorem-badge {
+      background: var(--badge-bg);
+      color: var(--badge-text);
       font-weight: 700;
-      font-size: 0.85rem;
-      padding: 2px 8px;
-      border-radius: 6px;
+      font-size: 0.9rem;
+      padding: 4px 10px;
+      border-radius: 8px;
       white-space: nowrap;
-      flex-shrink: 0;
     }
 
-    .is-unpublished .theorem-id {
-      background: var(--badge-unpub);
-      color: var(--badge-unpub-text);
-    }
-
-    .theorem-title {
-      font-weight: 600;
-      font-size: 0.98rem;
-      flex-grow: 1;
-      line-height: 1.4;
-    }
-
-    .card-body {
-      padding: 0 14px 14px 14px;
-      border-top: 1px dashed var(--border);
-      padding-top: 10px;
-    }
-
-    .formula-box {
-      background: #f1f5f9;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 0.88rem;
-      overflow-x: auto;
-      margin-bottom: 8px;
+    .theorem-name {
+      font-weight: 700;
+      font-size: 1.05rem;
       color: #0f172a;
     }
 
-    .description {
+    .section-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .formula-container {
+      background: var(--formula-bg);
+      border-radius: 8px;
+      padding: 12px;
       font-size: 0.9rem;
+      overflow-x: auto;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Accordion */
+    details {
+      border-top: 1px solid #f1f5f9;
+      padding-top: 8px;
+    }
+
+    summary {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #0f172a;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: "▶";
+      font-size: 0.75rem;
+      transition: transform 0.2s;
+    }
+
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .accordion-content {
+      padding-top: 10px;
+      font-size: 0.88rem;
       color: #334155;
-      margin-bottom: 8px;
+      line-height: 1.6;
       white-space: pre-line;
     }
 
-    .source-tag {
-      display: inline-block;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      background: #f3f4f6;
-      padding: 2px 6px;
-      border-radius: 4px;
+    /* Source Section */
+    .source-block {
+      margin-top: auto;
+      padding-top: 4px;
     }
 
-    .status-msg {
-      text-align: center;
-      padding: 40px 16px;
+    .source-title {
+      font-size: 0.8rem;
       color: var(--text-muted);
-      font-size: 0.95rem;
+      margin-bottom: 2px;
+    }
+
+    .source-name {
+      font-size: 0.88rem;
+      color: var(--link-blue);
     }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>苫米地理論 定理データベース</h1>
-  <div class="controls">
-    <input type="text" id="searchInput" class="search-box" placeholder="検索（番号・名称・数式・説明）...">
-    <div class="filter-row">
-      <label class="toggle-label">
-        <input type="checkbox" id="hideUnpubToggle" checked> 未公開・欠番を隠す
-      </label>
-      <span id="countDisplay">読み込み中...</span>
+<div class="app-container">
+  <h1 class="page-title">苫米地定理一覧</h1>
+  <p class="page-subtitle">定理番号・名称・数式・概要・出典を一貫化したレスポンシブ版</p>
+
+  <div class="controls-row">
+    <input type="text" id="searchInput" class="search-input" placeholder="定理番号・名称・LUB・TCZなどで検索">
+    <div class="btn-group">
+      <button class="action-btn" id="openAllBtn">すべて開く</button>
+      <button class="action-btn" id="closeAllBtn">すべて閉じる</button>
     </div>
   </div>
-</header>
 
-<main class="container" id="theoremList">
-  <div class="status-msg" id="statusMsg">Googleスプレッドシートから最新データを同期中...</div>
-</main>
+  <div class="count-status" id="countStatus">0 / 0 件</div>
+
+  <div class="theorem-grid" id="theoremGrid"></div>
+</div>
 
 <script>
-// 指定されたGoogleスプレッドシートの公開CSV URL
 const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO4Uqo3PADT7h4jXnz4Hv3CvaA9u36gLZD-iFZIPgkLxJ3QXfeOOVKdWV8b-JmQkoSHPdzGJBPa5un/pub?gid=0&single=true&output=csv";
 
-let theorems = [];
+// 内蔵マスター（CSVとマッピング／フォールバック用）
+const masterData = [
+  { id: "T1", name: "苫米地主定理／個人TCZ収束定理", formula: "\\pi_c = \\arg\\min_p \\int_0^T V_0(x(t), t) dt \\implies x(t) \\longrightarrow \\text{TCZ}", desc: "ボールが谷へ転がるように、心は「落ち着く場所」へ向かう。ただし定理が保証するのは、方策が実際に点数を下げ続ける場合だけである。「最小化しようとした」だけでは足りない。", source: "認知潜在ポテンシャル自由エネルギー理論" },
+  { id: "T2", name: "苫米地Shared-TCZ収束定理", formula: "\\pi_i = \\arg\\min_{u_i(\\cdot)} \\int (V_{0,i} + \\sum_j \\gamma_{ij}S_{ij}) ds \\implies \\text{dist}(x(t), \\text{TCZ}_{shared,cl}(t)) \\to 0", desc: "「自分のしんどさ＋みんなとのズレ料金、の合計を各自が最小にすると、全員の軌道は共有の谷へそろって落ち着く」。家族が、チームが、時間とともに一つの安定に collapses していく現象の骨格である。", source: "苫米地四法印定理" },
+  { id: "T3", name: "苫米地LUB抽象定理", formula: "\\Phi_3(x(t),t) \\le \\Phi_3(x_0,0)e^{-ct}, \\mathcal{A}_i(x_i(t)) \\to 0, \\text{即ち } \\|\\iota(\\phi_i(x_i(t))) - \\iota(L^*)\\| \\to 0", desc: "定理2に「屋根への未達ペナルティ」を一項足す。すると集団は、ただ仲良く安定するだけでなく、全員を包む共通目的（LUB）へ引き上げられる。谷の底が、上へ持ち上がる。", source: "認知潜在ポテンシャル自由エネルギー理論" },
+  { id: "T4", name: "苫米地臨場感加重定理", formula: "\\tilde{V} = V_0 - \\kappa PQ, x \\to \\text{TCZ}_P", desc: "行動が変わるのは、意志が強いからではない。地形が変わるからである。ある未来の世界を強い臨場感 P で感じているとき、その世界に対応する場所の点数が κPQ だけ下がる。つまりそこに谷ができる。谷ができれば、ボールはひとりでにそちらへ転がる。", source: "苫米地認知宇宙論〜仏法数理厳密証明／定理28–32" },
+  { id: "T5", name: "未公開", formula: "", desc: "", source: "" },
+  { id: "T6A", name: "未公開", formula: "", desc: "", source: "" }
+];
 
-async function fetchCSVData() {
+let currentItems = masterData;
+
+async function init() {
   try {
-    let csvText = "";
-    try {
-      // 1. 直接取得を試みる
-      const res = await fetch(SPREADSHEET_CSV_URL);
-      if (!res.ok) throw new Error("Direct fetch failed");
-      csvText = await res.text();
-    } catch (e) {
-      // 2. CORS回避用プロキシ経由で取得（フォールバック）
-      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SPREADSHEET_CSV_URL);
-      const resProxy = await fetch(proxyUrl);
-      if (!resProxy.ok) throw new Error("Proxy fetch failed");
-      csvText = await resProxy.text();
+    const res = await fetch(SPREADSHEET_CSV_URL);
+    if (res.ok) {
+      const csvText = await res.text();
+      parseAndMergeCSV(csvText);
+    } else {
+      render(masterData);
     }
-
-    parseCSV(csvText);
-  } catch (err) {
-    document.getElementById('statusMsg').textContent = "データの取得に失敗しました。スプレッドシートの共有設定を確認してください。";
-    console.error(err);
+  } catch (e) {
+    render(masterData);
   }
 }
 
-function parseCSV(csvText) {
+function parseAndMergeCSV(csvText) {
   Papa.parse(csvText, {
     header: false,
     skipEmptyLines: true,
     complete: function(results) {
       const rows = results.data;
-      if (!rows || rows.length === 0) return;
+      if (rows && rows.length > 1) {
+        currentItems = rows.slice(1).map(row => {
+          const id = (row[0] || "").trim();
+          const name = (row[1] || "").trim();
+          const formula = (row[2] || "").trim();
+          const desc = (row[3] || "").trim();
+          let source = (row[4] || "").trim();
 
-      // ヘッダー行をスキップしマッピング
-      // 列構成: 0:番号, 1:定理名, 2:中心式, 3:何の定理か, 4:参照元
-      theorems = rows.slice(1).map(row => {
-        const id = (row[0] || "").trim();
-        const name = (row[1] || "").trim();
-        const formula = (row[2] || "").trim();
-        const desc = (row[3] || "").trim();
-        const source = (row[4] || "").trim();
+          const matched = masterData.find(m => m.id === id);
+          if (!source && matched) source = matched.source;
 
-        const isUnpublished = name.includes("未公開") || name.includes("欠番") || (!formula && !desc);
-
-        return {
-          id: id,
-          name: name,
-          formula: formula,
-          desc: desc,
-          source: source,
-          status: isUnpublished ? 'unpublished' : 'published'
-        };
-      });
-
-      renderTheorems();
+          return { id, name, formula, desc, source };
+        });
+      }
+      render(currentItems);
     }
   });
 }
 
-function renderTheorems() {
-  const query = document.getElementById('searchInput').value.toLowerCase().trim();
-  const hideUnpub = document.getElementById('hideUnpubToggle').checked;
-  const listEl = document.getElementById('theoremList');
-  
-  listEl.innerHTML = '';
+function render(items) {
+  const grid = document.getElementById("theoremGrid");
+  const query = document.getElementById("searchInput").value.toLowerCase().trim();
+  grid.innerHTML = "";
+
   let visibleCount = 0;
 
-  theorems.forEach(item => {
-    if (hideUnpub && item.status === 'unpublished') {
-      return;
-    }
-
-    const searchText = `${item.id} ${item.name} ${item.formula} ${item.desc} ${item.source}`.toLowerCase();
-    if (query && !searchText.includes(query)) {
-      return;
-    }
+  items.forEach(item => {
+    const searchStr = `${item.id} ${item.name} ${item.formula} ${item.desc} ${item.source}`.toLowerCase();
+    if (query && !searchStr.includes(query)) return;
 
     visibleCount++;
 
-    const card = document.createElement('div');
-    card.className = `card ${item.status === 'unpublished' ? 'is-unpublished' : ''}`;
-    
-    // LaTeX形式に調整
-    let formulaHtml = item.formula ? `<div class="formula-box">$$\\small ${escapeMath(item.formula)}$$</div>` : '';
-    let descHtml = item.desc ? `<div class="description">${escapeHtml(item.desc)}</div>` : '';
-    let sourceHtml = item.source ? `<span class="source-tag">${escapeHtml(item.source)}</span>` : '';
+    const card = document.createElement("div");
+    card.className = "theorem-card";
+
+    const formulaContent = item.formula 
+      ? `$$\\small ${item.formula.replace(/⟶/g, "\\longrightarrow ").replace(/⟹/g, "\\implies ")}$$`
+      : "";
 
     card.innerHTML = `
       <div class="card-header">
-        <span class="theorem-id">${escapeHtml(item.id)}</span>
-        <div class="theorem-title">${escapeHtml(item.name)}</div>
+        <span class="theorem-badge">${escapeHtml(item.id)}</span>
+        <div class="theorem-name">${escapeHtml(item.name)}</div>
       </div>
-      ${(item.formula || item.desc || item.source) ? `
-        <div class="card-body">
-          ${formulaHtml}
-          ${descHtml}${sourceHtml}
+      <div class="section-label">数式・状態</div>
+      <div class="formula-container">${formulaContent}</div>
+      <details>
+        <summary>概要を読む</summary>
+        <div class="accordion-content">${escapeHtml(item.desc || "概要はありません。")}</div>
+      </details>
+      ${item.source ? `
+        <div class="source-block">
+          <div class="source-title">出典</div>
+          <div class="source-name">${escapeHtml(item.source)}</div>
         </div>
-      ` : ''}
+      ` : ""}
     `;
 
-    listEl.appendChild(card);
+    grid.appendChild(card);
   });
 
-  document.getElementById('countDisplay').textContent = `${visibleCount} 件表示`;
+  document.getElementById("countStatus").textContent = `${visibleCount} / ${items.length} 件`;
 
-  if (visibleCount === 0) {
-    listEl.innerHTML = '<div class="status-msg">該当する定理が見つかりませんでした。</div>';
-  }
-
-  // 数式描画のリフレッシュ
   if (window.MathJax && MathJax.typesetPromise) {
     MathJax.typesetPromise();
   }
 }
 
 function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function escapeMath(str) {
-  return str.replace(/⟶/g, "\\longrightarrow ").replace(/⟹/g, "\\implies ");
-}
+document.getElementById("searchInput").addEventListener("input", () => render(currentItems));
+document.getElementById("openAllBtn").addEventListener("click", () => {
+  document.querySelectorAll("details").forEach(d => d.open = true);
+});
+document.getElementById("closeAllBtn").addEventListener("click", () => {
+  document.querySelectorAll("details").forEach(d => d.open = false);
+});
 
-document.getElementById('searchInput').addEventListener('input', renderTheorems);
-document.getElementById('hideUnpubToggle').addEventListener('change', renderTheorems);
-
-// 初回データ読み込み
-fetchCSVData();
+init();
 </script>
 </body>
 </html>
