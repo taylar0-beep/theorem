@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>苫米地定理一覧</title>
-  <!-- MathJax Config -->
+  
+  <!-- MathJax (数式表示ライブラリ) -->
   <script>
     window.MathJax = {
       tex: {
@@ -15,19 +16,21 @@
     };
   </script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  
+  <!-- PapaParse (CSV解析ライブラリ) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
     :root {
       --bg-color: #f1f3f8;
       --card-bg: #ffffff;
-      --text-main: #1e293b;
+      --text-dark: #0f172a;
       --text-muted: #64748b;
-      --badge-bg: #e0e7ff;
-      --badge-text: #3b82f6;
+      --badge-bg: #eff6ff;
+      --badge-text: #2563eb;
       --formula-bg: #f8fafc;
-      --link-blue: #2563eb;
       --border-color: #e2e8f0;
+      --link-blue: #2563eb;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,7 +38,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg-color);
-      color: var(--text-main);
+      color: var(--text-dark);
       line-height: 1.5;
       padding: 24px 16px 48px;
     }
@@ -45,7 +48,7 @@
       margin: 0 auto;
     }
 
-    /* Page Header */
+    /* ヘッダーエリア */
     .page-title {
       font-size: 1.6rem;
       font-weight: 800;
@@ -59,7 +62,7 @@
       margin-bottom: 20px;
     }
 
-    /* Search & Controls */
+    /* 検索バー・ボタン群 */
     .controls-row {
       display: flex;
       gap: 12px;
@@ -71,15 +74,17 @@
     .search-input {
       flex: 1;
       min-width: 280px;
-      padding: 10px 16px;
+      padding: 12px 16px;
       background: #ffffff;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border-color);
       border-radius: 8px;
       font-size: 0.95rem;
       outline: none;
     }
 
-    .search-input:focus { border-color: var(--link-blue); }
+    .search-input:focus {
+      border-color: var(--link-blue);
+    }
 
     .btn-group {
       display: flex;
@@ -88,12 +93,17 @@
 
     .action-btn {
       background: #ffffff;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border-color);
       color: var(--text-muted);
-      padding: 8px 16px;
+      padding: 10px 16px;
       border-radius: 8px;
       font-size: 0.85rem;
+      font-weight: 500;
       cursor: pointer;
+    }
+
+    .action-btn:hover {
+      background: #f8fafc;
     }
 
     .count-status {
@@ -103,7 +113,7 @@
       margin-bottom: 16px;
     }
 
-    /* Grid Layout */
+    /* 2列グリッドレイアウト（スマホでは1列） */
     .theorem-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -111,20 +121,23 @@
     }
 
     @media (max-width: 768px) {
-      .theorem-grid { grid-template-columns: 1fr; }
+      .theorem-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
-    /* Card Component */
+    /* 定理カード */
     .theorem-card {
       background: var(--card-bg);
       border-radius: 16px;
       padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
+    /* カード一番上: バッジ ＋ 定理名称 */
     .card-header {
       display: flex;
       align-items: center;
@@ -134,44 +147,51 @@
     .theorem-badge {
       background: var(--badge-bg);
       color: var(--badge-text);
-      font-weight: 700;
-      font-size: 0.9rem;
+      font-weight: 800;
+      font-size: 0.95rem;
       padding: 4px 10px;
       border-radius: 8px;
       white-space: nowrap;
     }
 
     .theorem-name {
-      font-weight: 700;
-      font-size: 1.05rem;
+      font-weight: 800;
+      font-size: 1.1rem;
       color: #0f172a;
+      line-height: 1.3;
     }
 
+    /* サブタイトル: 数式・状態 */
     .section-label {
       font-size: 0.8rem;
       color: var(--text-muted);
       font-weight: 600;
+      margin-top: 2px;
     }
 
+    /* グレー背景領域の中央に大きく数式を表示 */
     .formula-container {
       background: var(--formula-bg);
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 0.9rem;
+      border-radius: 10px;
+      padding: 16px 14px;
+      font-size: 1.15rem; /* 大きなフォントサイズ */
       overflow-x: auto;
-      min-height: 48px;
+      min-height: 60px;
       display: flex;
       align-items: center;
+      justify-content: flex-start;
+      border: 1px solid #f1f5f9;
     }
 
-    /* Accordion */
+    /* アコーディオン: ▶ 概要を読む */
     details {
       border-top: 1px solid #f1f5f9;
       padding-top: 8px;
+      margin-top: 2px;
     }
 
     summary {
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       font-weight: 700;
       color: #0f172a;
       cursor: pointer;
@@ -187,6 +207,7 @@
       content: "▶";
       font-size: 0.75rem;
       transition: transform 0.2s;
+      color: #0f172a;
     }
 
     details[open] summary::before {
@@ -194,17 +215,17 @@
     }
 
     .accordion-content {
-      padding-top: 10px;
+      padding-top: 8px;
       font-size: 0.88rem;
       color: #334155;
       line-height: 1.6;
       white-space: pre-line;
     }
 
-    /* Source Section */
+    /* 出典表示 */
     .source-block {
       margin-top: auto;
-      padding-top: 4px;
+      padding-top: 8px;
     }
 
     .source-title {
@@ -216,6 +237,7 @@
     .source-name {
       font-size: 0.88rem;
       color: var(--link-blue);
+      word-break: break-all;
     }
   </style>
 </head>
@@ -233,15 +255,16 @@
     </div>
   </div>
 
-  <div class="count-status" id="countStatus">0 / 0 件</div>
+  <div class="count-status" id="countStatus">読み込み中...</div>
 
   <div class="theorem-grid" id="theoremGrid"></div>
 </div>
 
 <script>
+// Googleスプレッドシートの公開CSV URL
 const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO4Uqo3PADT7h4jXnz4Hv3CvaA9u36gLZD-iFZIPgkLxJ3QXfeOOVKdWV8b-JmQkoSHPdzGJBPa5un/pub?gid=0&single=true&output=csv";
 
-// 内蔵マスター（CSVとマッピング／フォールバック用）
+// 内蔵マスターデータ（CSV取得失敗時のフォールバック／出典補完用）
 const masterData = [
   { id: "T1", name: "苫米地主定理／個人TCZ収束定理", formula: "\\pi_c = \\arg\\min_p \\int_0^T V_0(x(t), t) dt \\implies x(t) \\longrightarrow \\text{TCZ}", desc: "ボールが谷へ転がるように、心は「落ち着く場所」へ向かう。ただし定理が保証するのは、方策が実際に点数を下げ続ける場合だけである。「最小化しようとした」だけでは足りない。", source: "認知潜在ポテンシャル自由エネルギー理論" },
   { id: "T2", name: "苫米地Shared-TCZ収束定理", formula: "\\pi_i = \\arg\\min_{u_i(\\cdot)} \\int (V_{0,i} + \\sum_j \\gamma_{ij}S_{ij}) ds \\implies \\text{dist}(x(t), \\text{TCZ}_{shared,cl}(t)) \\to 0", desc: "「自分のしんどさ＋みんなとのズレ料金、の合計を各自が最小にすると、全員の軌道は共有の谷へそろって落ち着く」。家族が、チームが、時間とともに一つの安定に collapses していく現象の骨格である。", source: "苫米地四法印定理" },
@@ -281,6 +304,7 @@ function parseAndMergeCSV(csvText) {
           const desc = (row[3] || "").trim();
           let source = (row[4] || "").trim();
 
+          // CSVに出典が含まれない場合、マスターから自動保管
           const matched = masterData.find(m => m.id === id);
           if (!source && matched) source = matched.source;
 
@@ -308,8 +332,9 @@ function render(items) {
     const card = document.createElement("div");
     card.className = "theorem-card";
 
+    // 数式（ディスプレイモード形式で大きく表示）
     const formulaContent = item.formula 
-      ? `$$\\small ${item.formula.replace(/⟶/g, "\\longrightarrow ").replace(/⟹/g, "\\implies ")}$$`
+      ? `$$\\displaystyle ${item.formula.replace(/⟶/g, "\\longrightarrow ").replace(/⟹/g, "\\implies ")}$$`
       : "";
 
     card.innerHTML = `
@@ -321,7 +346,7 @@ function render(items) {
       <div class="formula-container">${formulaContent}</div>
       <details>
         <summary>概要を読む</summary>
-        <div class="accordion-content">${escapeHtml(item.desc || "概要はありません。")}</div>
+        <div class="accordion-content">${escapeHtml(item.desc || "概要説明はありません。")}</div>
       </details>
       ${item.source ? `
         <div class="source-block">
@@ -336,6 +361,7 @@ function render(items) {
 
   document.getElementById("countStatus").textContent = `${visibleCount} / ${items.length} 件`;
 
+  // 数式の描画リフレッシュ
   if (window.MathJax && MathJax.typesetPromise) {
     MathJax.typesetPromise();
   }
