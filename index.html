@@ -3,32 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>定理マスタ</title>
+  <title>シン苫米地定理一覧</title>
   <style>
-    body { font-family: sans-serif; line-height: 1.6; max-width: 920px; margin: 24px auto; padding: 0 12px; }
-    .toolbar { position: sticky; top: 0; background: #fff; padding: 12px 0 16px; border-bottom: 1px solid #ddd; z-index: 10; }
-    #q { width: 100%; max-width: 420px; font-size: 16px; padding: 8px 10px; box-sizing: border-box; }
-    article { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    body {
+      font-family: sans-serif;
+      line-height: 1.6;
+      max-width: 920px;
+      margin: 24px auto;
+      padding: 0 12px;
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      padding: 12px 0 16px;
+      border-bottom: 1px solid #ddd;
+      z-index: 10;
+    }
+    #q {
+      width: 100%;
+      max-width: 420px;
+      font-size: 16px;
+      padding: 8px 10px;
+      box-sizing: border-box;
+    }
+    article {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
     .no { color: #666; font-size: 0.9em; }
     h2 { margin: 4px 0 12px; font-size: 1.1em; overflow-wrap: anywhere; }
     .formula {
       background: #f7f4ea;
-      padding: 16px 8px;
+      padding: 16px 0;
       text-align: center;
-      overflow-x: hidden;
-      overflow-wrap: anywhere;
-      word-break: break-word;
+      overflow: visible;
     }
-    .formula-line { margin: 0.35em 0; }
+    .formula-line { margin: 0.35em 0; overflow: visible; }
     .formula mjx-container {
-      max-width: 100%;
-      overflow-x: hidden;
+      max-width: none;
+      overflow: visible;
     }
     .formula mjx-container[display="true"] { margin: 0.2em 0; }
     .hidden { display: none; }
     @media (max-width: 640px) {
+      body { margin: 16px 0; padding: 0; }
+      .toolbar { padding: 12px 12px 16px; }
+      article {
+        margin: 12px 0;
+        padding: 16px 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+      article .no,
+      article h2,
+      article p { padding: 0 12px; }
+      .formula { padding: 16px 4px; }
       h2 { font-size: 1.02em; }
-      .formula { font-size: 0.95em; padding: 12px 4px; }
     }
   </style>
   <script>
@@ -39,7 +73,7 @@
       },
       chtml: {
         scale: 1,
-        minScale: 0.55,
+        minScale: 0.5,
         displayAlign: "center"
       }
     };
@@ -48,7 +82,7 @@
 </head>
 <body>
   <div class="toolbar">
-    <h1>定理一覧</h1>
+    <h1>シン苫米地定理一覧</h1>
     <input id="q" type="search" placeholder="番号・定理名・解説・参照元で検索">
   </div>
   <div id="list">読み込み中...</div>
@@ -67,30 +101,42 @@
     }
 
     function toMath(src) {
-      const lines = String(src || "")
+      return String(src || "")
         .split(/\r?\n/)
         .map(x => x.trim())
-        .filter(Boolean);
+        .filter(Boolean)
+        .map(line => {
+          const raw = /\$|\\\(|\\\[|\\begin/.test(line) ? line : `$$${line}$$`;
+          return `<div class="formula-line">${raw}</div>`;
+        })
+        .join("");
+    }
 
-      return lines.map(line => {
-        const raw = /\$|\\\(|\\\[|\\begin/.test(line)
-          ? line
-          : `$$${line}$$`;
-        return `<div class="formula-line">${raw}</div>`;
-      }).join("");
+    function fitMath() {
+      document.querySelectorAll(".formula mjx-container").forEach(el => {
+        el.style.transform = "none";
+        el.style.height = "";
+        const parentW = el.parentElement.clientWidth;
+        const w = el.scrollWidth;
+        if (!parentW || w <= parentW) return;
+        const scale = parentW / w;
+        el.style.transformOrigin = "center top";
+        el.style.transform = `scale(${scale})`;
+        el.style.height = el.getBoundingClientRect().height + "px";
+      });
     }
 
     function typeset() {
       if (window.MathJax && MathJax.typesetPromise) {
-        return MathJax.typesetPromise([listEl]);
+        return MathJax.typesetPromise([listEl]).then(fitMath);
       }
+      fitMath();
     }
 
     fetch(API_URL, { redirect: "follow" })
       .then(res => res.text())
       .then(text => {
         const items = JSON.parse(text).filter(item => item.番号 || item.定理名);
-
         listEl.innerHTML = items.map(item => {
           const id = item.番号 || "";
           const ref = item["参照元（最新優先）"] || "";
@@ -100,7 +146,6 @@
             : escapeHtml(ref);
           const formula = item.中心式LaTeX || item.中心式 || "";
           const hay = [item.番号, item.定理名, item.何の定理か, ref].join(" ").toLowerCase();
-
           return `
             <article data-q="${hay.replace(/"/g, "&quot;")}">
               <div class="no">${escapeHtml(id)}</div>
@@ -111,7 +156,6 @@
             </article>
           `;
         }).join("");
-
         return typeset();
       })
       .catch(err => {
@@ -124,6 +168,8 @@
         el.classList.toggle("hidden", !(!q || (el.dataset.q || "").includes(q)));
       });
     });
+
+    window.addEventListener("resize", fitMath);
   </script>
 </body>
 </html>
