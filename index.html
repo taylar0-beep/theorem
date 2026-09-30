@@ -2,10 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>マスタ一覧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>定理マスタ</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; max-width: 880px; margin: 24px auto; padding: 0 16px; }
+    article { border: 1px solid #ddd; border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+    .no { color: #666; font-size: 0.9em; }
+    h2 { margin: 4px 0 12px; font-size: 1.15em; }
+    .formula { background: #f7f4ea; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .meta { color: #444; }
+  </style>
 </head>
 <body>
+  <h1>定理一覧</h1>
   <div id="list">読み込み中...</div>
+
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwaF85aH0VcOZwfJL9xvr0GuzZx8xtjx45ye65_SUP9e6sKvtTPFZghtBXRDCj8ZmLo/exec";
 
@@ -13,19 +24,28 @@
       .then(res => res.text())
       .then(text => {
         const items = JSON.parse(text);
-        console.log(items);
-
         const list = document.getElementById("list");
-        if (!Array.isArray(items)) {
-          list.textContent = "JSONの形が配列ではありません";
-          return;
-        }
 
-        list.innerHTML = items.map(item => {
-          const label = item.label || item.name || item.URL || "リンク";
-          const href = item.url || item.URL || "#";
-          return `<p><a href="${href}">${label}</a></p>`;
-        }).join("");
+        list.innerHTML = items
+          .filter(item => item.番号 || item.定理名)
+          .map(item => {
+            const title = item.定理名 || item.番号 || "無題";
+            const href = item.アドレス || "";
+            const heading = href
+              ? `<a href="${href}" target="_blank" rel="noopener">${title}</a>`
+              : title;
+
+            return `
+              <article>
+                <div class="no">${item.番号 || ""}</div>
+                <h2>${heading}</h2>
+                <pre class="formula">${item.中心式 || ""}</pre>
+                <p>${item.何の定理か || ""}</p>
+                <p class="meta">参照元: ${item["参照元（最新優先）"] || ""}</p>
+              </article>
+            `;
+          })
+          .join("");
       })
       .catch(err => {
         document.getElementById("list").textContent = "読み込み失敗: " + err;
