@@ -37,7 +37,11 @@
       box-sizing: border-box;
     }
 
-    /* PC・iPad：横幅が十分なら2列 */
+    /*
+     * PC・iPad：
+     * カード幅が340px以上確保できる場合は2列。
+     * 狭い場合は自動的に1列。
+     */
     #list {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -50,6 +54,7 @@
       padding: 16px;
       margin: 0;
       min-width: 0;
+      box-sizing: border-box;
     }
 
     .no {
@@ -99,7 +104,9 @@
       overflow-wrap: anywhere;
     }
 
-    /* スマホは必ず1列 */
+    /*
+     * スマホは必ず1列
+     */
     @media (max-width: 640px) {
       body {
         margin: 8px 0;
@@ -146,9 +153,16 @@
   <script>
     window.MathJax = {
       tex: {
-        inlineMath: [["$", "$"], ["\\(", "\\)"]],
-        displayMath: [["$$", "$$"], ["\\[", "\\]"]]
+        inlineMath: [
+          ["$", "$"],
+          ["\\(", "\\)"]
+        ],
+        displayMath: [
+          ["$$", "$$"],
+          ["\\[", "\\]"]
+        ]
       },
+
       chtml: {
         scale: 1,
         minScale: 0.5,
@@ -186,6 +200,11 @@
     const qEl = document.getElementById("q");
 
 
+    /*
+     * ==========================================================
+     * HTMLエスケープ
+     * ==========================================================
+     */
     function escapeHtml(s) {
       return String(s)
         .replaceAll("&", "&amp;")
@@ -194,25 +213,367 @@
     }
 
 
+    /*
+     * ==========================================================
+     * Unicode数式要素
+     * ==========================================================
+     *
+     * Unicode文字、数字、結合文字を許可。
+     *
+     * 例：
+     * W_G
+     * Ṽσ
+     * ℱ
+     * ℓ
+     * α
+     * β
+     * σ
+     */
+    const UNICODE_ATOM =
+      "[\\p{L}\\p{N}\\p{M}_⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+";
+
+
+    /*
+     * ==========================================================
+     * 今回追加した「特殊な2つ」の専用変換
+     * ==========================================================
+     *
+     * ① d[Fₚₕᵧₛ + Φ_A]/dt
+     *
+     *     ↓
+     *
+     * \frac{d[Fₚₕᵧₛ + Φ_A]}{dt}
+     *
+     *
+     * ② dS_{gen}/dt
+     *
+     *     ↓
+     *
+     * \frac{dS_{gen}}{dt}
+     *
+     *
+     * この2パターンだけを特別扱いする。
+     */
+    function convertSpecialFractions(s) {
+
+      /*
+       * ① d[Fₚₕᵧₛ + Φ_A]/dt
+       *
+       * 空白が多少違っていても対応。
+       */
+      s = s.replace(
+        /d\[Fₚₕᵧₛ\s*\+\s*Φ_A\]\/dt/gu,
+        "\\frac{d[Fₚₕᵧₛ + Φ_A]}{dt}"
+      );
+
+
+      /*
+       * ② dS_{gen}/dt
+       *
+       * 空白なしの通常形に対応。
+       */
+      s = s.replace(
+        /dS_\{gen\}\/dt/gu,
+        "\\frac{dS_{gen}}{dt}"
+      );
+
+
+      return s;
+    }
+
+
+    /*
+     * ==========================================================
+     * 偏微分の自動分数化
+     * ==========================================================
+     *
+     * ∂W_G/∂t
+     * ∂Ṽσ/∂σ
+     * ∂ℱ/∂ℓ
+     */
+    function convertDerivativeFractions(s) {
+
+      const pattern =
+        new RegExp(
+          "([+-]?)∂(" +
+          UNICODE_ATOM +
+          ")\\/∂(" +
+          UNICODE_ATOM +
+          ")",
+          "gu"
+        );
+
+
+      s = s.replace(
+        pattern,
+        (match, sign, numerator, denominator) => {
+
+          return (
+            sign +
+            "\\frac{\\partial " +
+            numerator +
+            "}{\\partial " +
+            denominator +
+            "}"
+          );
+        }
+      );
+
+
+      return s;
+    }
+
+
+    /*
+     * ==========================================================
+     * 通常の微分の自動分数化
+     * ==========================================================
+     *
+     * dW/dt
+     * dW_G/dt
+     * dṼσ/dσ
+     */
+    function convertNormalDerivativeFractions(s) {
+
+      const pattern =
+        new RegExp(
+          "([+-]?)d(" +
+          UNICODE_ATOM +
+          ")\\/d(" +
+          UNICODE_ATOM +
+          ")",
+          "gu"
+        );
+
+
+      s = s.replace(
+        pattern,
+        (match, sign, numerator, denominator) => {
+
+          return (
+            sign +
+            "\\frac{d" +
+            numerator +
+            "}{d" +
+            denominator +
+            "}"
+          );
+        }
+      );
+
+
+      return s;
+    }
+
+
+    /*
+     * ==========================================================
+     * Δによる差分の自動分数化
+     * ==========================================================
+     *
+     * ΔW/Δt
+     * ΔṼσ/Δσ
+     */
+    function convertDeltaFractions(s) {
+
+      const pattern =
+        new RegExp(
+          "([+-]?)Δ(" +
+          UNICODE_ATOM +
+          ")\\/Δ(" +
+          UNICODE_ATOM +
+          ")",
+          "gu"
+        );
+
+
+      s = s.replace(
+        pattern,
+        (match, sign, numerator, denominator) => {
+
+          return (
+            sign +
+            "\\frac{\\Delta " +
+            numerator +
+            "}{\\Delta " +
+            denominator +
+            "}"
+          );
+        }
+      );
+
+
+      return s;
+    }
+
+
+    /*
+     * ==========================================================
+     * 括弧付き分数
+     * ==========================================================
+     *
+     * (a+b)/(c+d)
+     * (x+y)/(σ+ℓ)
+     */
+    function convertParenthesizedFractions(s) {
+
+      const pattern =
+        /(\([^()]+\))\/(\([^()]+\))/gu;
+
+      return s.replace(
+        pattern,
+        "\\frac{$1}{$2}"
+      );
+    }
+
+
+    /*
+     * ==========================================================
+     * 単純な分数
+     * ==========================================================
+     *
+     * W_G/t
+     * a/b
+     * x²/y
+     *
+     * ただし、すでに \frac になっているものは
+     * なるべく再変換しない。
+     */
+    function convertSimpleFractions(s) {
+
+      const pattern =
+        new RegExp(
+          "(?<![\\\\A-Za-z0-9_}])" +
+          "(" +
+          UNICODE_ATOM +
+          ")" +
+          "\\/" +
+          "(" +
+          UNICODE_ATOM +
+          ")" +
+          "(?![A-Za-z0-9_])",
+          "gu"
+        );
+
+
+      return s.replace(
+        pattern,
+        (match, numerator, denominator) => {
+
+          return (
+            "\\frac{" +
+            numerator +
+            "}{" +
+            denominator +
+            "}"
+          );
+        }
+      );
+    }
+
+
+    /*
+     * ==========================================================
+     * 数式全体を正規化
+     * ==========================================================
+     */
+    function normalizeFormula(src) {
+
+      let s = String(src || "");
+
+
+      /*
+       * 全角マイナスを半角へ。
+       */
+      s = s.replaceAll("−", "-");
+
+
+      /*
+       * --------------------------------------------------------
+       * 最初に今回の2つの特殊式を処理。
+       * --------------------------------------------------------
+       *
+       * これを先に行うことで、
+       *
+       * d[Fₚₕᵧₛ + Φ_A]/dt
+       * dS_{gen}/dt
+       *
+       * が一般的な分数変換に引っかからなくても
+       * 確実に処理される。
+       */
+      s = convertSpecialFractions(s);
+
+
+      /*
+       * --------------------------------------------------------
+       * 一般的な数式の自動分数化
+       * --------------------------------------------------------
+       */
+      s = convertDerivativeFractions(s);
+
+      s = convertNormalDerivativeFractions(s);
+
+      s = convertDeltaFractions(s);
+
+      s = convertParenthesizedFractions(s);
+
+      s = convertSimpleFractions(s);
+
+
+      /*
+       * --------------------------------------------------------
+       * Unicode記号をMathJax命令へ変換
+       * --------------------------------------------------------
+       */
+      s = s.replaceAll("∂", "\\partial ");
+      s = s.replaceAll("Δ", "\\Delta ");
+
+
+      return s;
+    }
+
+
+    /*
+     * ==========================================================
+     * MathJax用HTMLへ変換
+     * ==========================================================
+     */
     function toMath(src) {
-      return String(src || "")
+
+      return normalizeFormula(src)
         .split(/\r?\n/)
         .map(x => x.trim())
         .filter(Boolean)
         .map(line => {
 
+          /*
+           * すでにLaTeXデリミタがある場合はそのまま。
+           *
+           * それ以外は $$...$$ にする。
+           */
           const raw =
             /\$|\\\(|\\\[|\\begin/.test(line)
               ? line
               : `$$${line}$$`;
 
-          return `<div class="formula-line">${raw}</div>`;
+
+          return `
+            <div class="formula-line">
+              ${raw}
+            </div>
+          `;
         })
         .join("");
     }
 
 
+    /*
+     * ==========================================================
+     * 数式の横幅フィット
+     * ==========================================================
+     */
     function fitMath() {
+
       document
         .querySelectorAll(".formula mjx-container")
         .forEach(el => {
@@ -220,43 +581,83 @@
           el.style.transform = "none";
           el.style.height = "";
 
-          const parentW = el.parentElement.clientWidth;
-          const w = el.scrollWidth;
 
-          if (!parentW || w <= parentW) return;
+          const parentW =
+            el.parentElement.clientWidth;
 
-          const scale = parentW / w;
 
-          el.style.transformOrigin = "center top";
-          el.style.transform = `scale(${scale})`;
+          const w =
+            el.scrollWidth;
+
+
+          if (!parentW || w <= parentW) {
+            return;
+          }
+
+
+          const scale =
+            parentW / w;
+
+
+          el.style.transformOrigin =
+            "center top";
+
+
+          el.style.transform =
+            `scale(${scale})`;
+
+
           el.style.height =
             el.getBoundingClientRect().height + "px";
         });
     }
 
 
+    /*
+     * ==========================================================
+     * MathJax組版
+     * ==========================================================
+     */
     function typeset() {
+
       if (
         window.MathJax &&
         MathJax.typesetPromise
       ) {
+
         return MathJax
           .typesetPromise([listEl])
           .then(fitMath);
       }
 
+
       fitMath();
     }
 
 
+    /*
+     * ==========================================================
+     * Google Apps Scriptからデータ取得
+     * ==========================================================
+     *
+     * 一時的なエラーの場合は最大3回再試行。
+     */
     async function fetchData(maxRetries = 3) {
 
       let lastError = null;
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+
+      for (
+        let attempt = 1;
+        attempt <= maxRetries;
+        attempt++
+      ) {
 
         try {
 
+          /*
+           * キャッシュ回避。
+           */
           const url =
             API_URL +
             (API_URL.includes("?") ? "&" : "?") +
@@ -264,23 +665,33 @@
             Date.now();
 
 
-          const res = await fetch(url, {
-            redirect: "follow",
-            cache: "no-store"
-          });
+          const res =
+            await fetch(url, {
+              redirect: "follow",
+              cache: "no-store"
+            });
 
 
-          const text = await res.text();
+          const text =
+            await res.text();
 
 
+          /*
+           * HTTPエラー。
+           */
           if (!res.ok) {
+
             throw new Error(
               `Google Apps Script が HTTP ${res.status} を返しました。`
             );
           }
 
 
-          const trimmed = text.trim();
+          /*
+           * Google側のHTMLエラー画面。
+           */
+          const trimmed =
+            text.trim();
 
 
           if (
@@ -288,16 +699,22 @@
             trimmed.startsWith("<html") ||
             trimmed.startsWith("<HTML")
           ) {
+
             throw new Error(
               "Google Apps Script からJSONではなくHTMLが返されました。"
             );
           }
 
 
-          const data = JSON.parse(text);
+          /*
+           * JSONとして解析。
+           */
+          const data =
+            JSON.parse(text);
 
 
           if (!Array.isArray(data)) {
+
             throw new Error(
               "Google Apps Script の返却データが配列ではありません。"
             );
@@ -311,120 +728,177 @@
 
           lastError = err;
 
-          if (attempt === maxRetries) {
+
+          /*
+           * 最後の試行なら終了。
+           */
+          if (
+            attempt === maxRetries
+          ) {
             break;
           }
 
 
-          await new Promise(resolve =>
-            setTimeout(resolve, attempt * 1000)
+          /*
+           * 1秒、2秒と待って再試行。
+           */
+          await new Promise(
+            resolve =>
+              setTimeout(
+                resolve,
+                attempt * 1000
+              )
           );
         }
       }
 
 
-      throw lastError ||
-        new Error("データ取得に失敗しました。");
+      throw (
+        lastError ||
+        new Error(
+          "データ取得に失敗しました。"
+        )
+      );
     }
 
 
+    /*
+     * ==========================================================
+     * 一覧読み込み
+     * ==========================================================
+     */
     async function loadItems() {
 
       try {
 
-        listEl.textContent = "読み込み中...";
+        listEl.textContent =
+          "読み込み中...";
 
 
-        const data = await fetchData(3);
+        const data =
+          await fetchData(3);
 
 
-        const items = data.filter(
-          item =>
-            item.番号 ||
-            item.定理名
-        );
+        /*
+         * 番号または定理名がある行だけ表示。
+         */
+        const items =
+          data.filter(
+            item =>
+              item.番号 ||
+              item.定理名
+          );
 
 
-        listEl.innerHTML = items
-          .map(item => {
+        listEl.innerHTML =
+          items
+            .map(item => {
 
-            const id =
-              item.番号 || "";
-
-            const ref =
-              item["参照元（最新優先）"] || "";
-
-            const href =
-              item.アドレス || "";
+              const id =
+                item.番号 || "";
 
 
-            const refHtml = href
-
-              ? `<a
-                  href="${href}"
-                  target="_blank"
-                  rel="noopener"
-                >${escapeHtml(ref || href)}</a>`
-
-              : escapeHtml(ref);
+              const ref =
+                item["参照元（最新優先）"] || "";
 
 
-            const formula =
-              item.中心式LaTeX ||
-              item.中心式 ||
-              "";
+              const href =
+                item.アドレス || "";
 
 
-            const hay = [
-              item.番号,
-              item.定理名,
-              item.何の定理か,
-              ref,
-              formula
-            ]
-              .join(" ")
-              .toLowerCase();
+              const refHtml = href
+
+                ? `<a
+                    href="${href}"
+                    target="_blank"
+                    rel="noopener"
+                  >${escapeHtml(
+                    ref || href
+                  )}</a>`
+
+                : escapeHtml(ref);
 
 
-            return `
-              <article
-                data-q="${hay.replace(/"/g, "&quot;")}"
-              >
-
-                <div class="no">
-                  ${escapeHtml(id)}
-                </div>
-
-                <h2>
-                  ${escapeHtml(item.定理名 || "")}
-                </h2>
-
-                <div class="formula">
-                  ${toMath(formula)}
-                </div>
-
-                <p>
-                  ${escapeHtml(
-                    item.何の定理か || ""
-                  ).replaceAll("\n", "<br>")}
-                </p>
-
-                <p>
-                  参照元: ${refHtml}
-                </p>
-
-              </article>
-            `;
-          })
-          .join("");
+              /*
+               * 「中心式LaTeX」を優先。
+               */
+              const formula =
+                item.中心式LaTeX ||
+                item.中心式 ||
+                "";
 
 
+              /*
+               * 検索対象。
+               *
+               * 数式そのものも含める。
+               */
+              const hay = [
+                item.番号,
+                item.定理名,
+                item.何の定理か,
+                ref,
+                formula
+              ]
+                .join(" ")
+                .toLowerCase();
+
+
+              return `
+                <article
+                  data-q="${hay.replace(
+                    /"/g,
+                    "&quot;"
+                  )}"
+                >
+
+                  <div class="no">
+                    ${escapeHtml(id)}
+                  </div>
+
+
+                  <h2>
+                    ${escapeHtml(
+                      item.定理名 || ""
+                    )}
+                  </h2>
+
+
+                  <div class="formula">
+                    ${toMath(formula)}
+                  </div>
+
+
+                  <p>
+                    ${escapeHtml(
+                      item.何の定理か || ""
+                    ).replaceAll(
+                      "\n",
+                      "<br>"
+                    )}
+                  </p>
+
+
+                  <p>
+                    参照元: ${refHtml}
+                  </p>
+
+                </article>
+              `;
+            })
+            .join("");
+
+
+        /*
+         * MathJaxで組版。
+         */
         await typeset();
 
 
       } catch (err) {
 
         console.error(err);
+
 
         listEl.innerHTML = `
           <div class="error">
@@ -436,42 +910,69 @@
                 : String(err)
             )}
 
-            Google Apps Script 側で一時的なエラーが発生している可能性があります。
-            少し時間を置いて再読み込みしてください。
+            Google Apps Script 側で一時的なエラーが
+            発生している可能性があります。
           </div>
         `;
       }
     }
 
 
+    /*
+     * ==========================================================
+     * 初回読み込み
+     * ==========================================================
+     */
     loadItems();
 
 
-    qEl.addEventListener("input", () => {
+    /*
+     * ==========================================================
+     * 検索
+     * ==========================================================
+     */
+    qEl.addEventListener(
+      "input",
+      () => {
 
-      const q =
-        qEl.value
-          .trim()
-          .toLowerCase();
-
-
-      document
-        .querySelectorAll("#list article")
-        .forEach(el => {
-
-          el.classList.toggle(
-            "hidden",
-            !(
-              !q ||
-              (el.dataset.q || "")
-                .includes(q)
-            )
-          );
-
-        });
-    });
+        const q =
+          qEl.value
+            .trim()
+            .toLowerCase();
 
 
+        document
+          .querySelectorAll(
+            "#list article"
+          )
+          .forEach(el => {
+
+            el.classList.toggle(
+              "hidden",
+              !(
+                !q ||
+                (
+                  el.dataset.q || ""
+                ).includes(q)
+              )
+            );
+
+          });
+      }
+    );
+
+
+    /*
+     * ==========================================================
+     * ブラウザ幅変更時に数式を再計算
+     * ==========================================================
+     */
     window.addEventListener(
       "resize",
-fitMath ); </script> </body> </html>
+      fitMath
+    );
+
+  </script>
+
+</body>
+</html>
