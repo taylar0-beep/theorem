@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>シン苫米地定理一覧</title>
+
   <style>
     body {
       font-family: sans-serif;
@@ -12,6 +13,7 @@
       margin: 24px auto;
       padding: 0 12px;
     }
+
     .toolbar {
       position: sticky;
       top: 0;
@@ -20,6 +22,7 @@
       border-bottom: 1px solid #ddd;
       z-index: 10;
     }
+
     #q {
       width: 100%;
       max-width: 420px;
@@ -27,60 +30,91 @@
       padding: 8px 10px;
       box-sizing: border-box;
     }
+
+    /* ★ 一覧をレスポンシブなグリッドにする */
+    #list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
     article {
       border: 1px solid #ddd;
       border-radius: 8px;
       padding: 16px;
-      margin: 16px 0;
+      margin: 0;
+      min-width: 0;
     }
-    .no { color: #666; font-size: 0.9em; }
+
+    .no {
+      color: #666;
+      font-size: 0.9em;
+    }
+
     h2 {
       margin: 4px 0 12px;
       font-size: 1.1em;
       overflow-wrap: anywhere;
     }
+
     .formula {
       background: #f7f4ea;
       padding: 16px 0;
       text-align: center;
       overflow: visible;
     }
+
     .formula-line {
       margin: 0.35em 0;
       overflow: visible;
     }
+
     .formula mjx-container {
       max-width: none;
       overflow: visible;
     }
+
     .formula mjx-container[display="true"] {
       margin: 0.2em 0;
     }
-    .hidden { display: none; }
 
+    .hidden {
+      display: none;
+    }
+
+    /* スマホは必ず1列 */
     @media (max-width: 640px) {
       body {
         margin: 16px 0;
         padding: 0;
       }
+
       .toolbar {
         padding: 12px 12px 16px;
       }
+
+      #list {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
       article {
-        margin: 12px 0;
         padding: 16px 0;
         border-radius: 0;
         border-left: none;
         border-right: none;
       }
+
       article .no,
       article h2,
       article p {
         padding: 0 12px;
       }
+
       .formula {
         padding: 16px 4px;
       }
+
       h2 {
         font-size: 1.02em;
       }
@@ -101,12 +135,17 @@
     };
   </script>
 
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
 </head>
 
 <body>
+
   <div class="toolbar">
     <h1>シン苫米地定理一覧</h1>
+
     <input
       id="q"
       type="search"
@@ -116,11 +155,14 @@
 
   <div id="list">読み込み中...</div>
 
+
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwaF85aH0VcOZwfJL9xvr0GuzZx8xtjx45ye65_SUP9e6sKvtTPFZghtBXRDCj8ZmLo/exec";
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbwaF85aH0VcOZwfJL9xvr0GuzZx8xtjx45ye65_SUP9e6sKvtTPFZghtBXRDCj8ZmLo/exec";
 
     const listEl = document.getElementById("list");
     const qEl = document.getElementById("q");
+
 
     function escapeHtml(s) {
       return String(s)
@@ -129,113 +171,195 @@
         .replaceAll(">", "&gt;");
     }
 
+
     function toMath(src) {
       return String(src || "")
         .split(/\r?\n/)
         .map(x => x.trim())
         .filter(Boolean)
         .map(line => {
-          const raw = /\$|\\\(|\\\[|\\begin/.test(line)
-            ? line
-            : `$$${line}$$`;
+
+          const raw =
+            /\$|\\\(|\\\[|\\begin/.test(line)
+              ? line
+              : `$$${line}$$`;
 
           return `<div class="formula-line">${raw}</div>`;
         })
         .join("");
     }
 
+
     function fitMath() {
-      document.querySelectorAll(".formula mjx-container").forEach(el => {
-        el.style.transform = "none";
-        el.style.height = "";
+      document
+        .querySelectorAll(".formula mjx-container")
+        .forEach(el => {
 
-        const parentW = el.parentElement.clientWidth;
-        const w = el.scrollWidth;
+          el.style.transform = "none";
+          el.style.height = "";
 
-        if (!parentW || w <= parentW) return;
+          const parentW = el.parentElement.clientWidth;
+          const w = el.scrollWidth;
 
-        const scale = parentW / w;
+          if (!parentW || w <= parentW) return;
 
-        el.style.transformOrigin = "center top";
-        el.style.transform = `scale(${scale})`;
-        el.style.height = el.getBoundingClientRect().height + "px";
-      });
+          const scale = parentW / w;
+
+          el.style.transformOrigin = "center top";
+          el.style.transform = `scale(${scale})`;
+          el.style.height =
+            el.getBoundingClientRect().height + "px";
+        });
     }
 
+
     function typeset() {
-      if (window.MathJax && MathJax.typesetPromise) {
-        return MathJax.typesetPromise([listEl]).then(fitMath);
+      if (
+        window.MathJax &&
+        MathJax.typesetPromise
+      ) {
+        return MathJax
+          .typesetPromise([listEl])
+          .then(fitMath);
       }
 
       fitMath();
     }
 
-    fetch(API_URL, { redirect: "follow" })
+
+    fetch(API_URL, {
+      redirect: "follow"
+    })
       .then(res => res.text())
+
       .then(text => {
-        const items = JSON.parse(text).filter(
-          item => item.番号 || item.定理名
-        );
 
-        listEl.innerHTML = items.map(item => {
-          const id = item.番号 || "";
-          const ref = item["参照元（最新優先）"] || "";
-          const href = item.アドレス || "";
+        const items = JSON.parse(text)
+          .filter(item =>
+            item.番号 ||
+            item.定理名
+          );
 
-          const refHtml = href
-            ? `<a href="${href}" target="_blank" rel="noopener">${escapeHtml(ref || href)}</a>`
-            : escapeHtml(ref);
 
-          const formula = item.中心式LaTeX || item.中心式 || "";
+        listEl.innerHTML = items
+          .map(item => {
 
-          // ★ 変更点：数式（formula）を検索対象に追加
-          const hay = [
-            item.番号,
-            item.定理名,
-            item.何の定理か,
-            ref,
-            formula
-          ].join(" ").toLowerCase();
+            const id =
+              item.番号 || "";
 
-          return `
-            <article data-q="${hay.replace(/"/g, "&quot;")}">
-              <div class="no">${escapeHtml(id)}</div>
+            const ref =
+              item["参照元（最新優先）"] || "";
 
-              <h2>${escapeHtml(item.定理名 || "")}</h2>
+            const href =
+              item.アドレス || "";
 
-              <div class="formula">
-                ${toMath(formula)}
-              </div>
 
-              <p>
-                ${escapeHtml(item.何の定理か || "").replaceAll("\n", "<br>")}
-              </p>
+            const refHtml = href
 
-              <p>
-                参照元: ${refHtml}
-              </p>
-            </article>
-          `;
-        }).join("");
+              ? `<a
+                  href="${href}"
+                  target="_blank"
+                  rel="noopener"
+                >${escapeHtml(ref || href)}</a>`
+
+              : escapeHtml(ref);
+
+
+            const formula =
+              item.中心式LaTeX ||
+              item.中心式 ||
+              "";
+
+
+            /*
+             * ★ 数式も検索対象に含める
+             */
+            const hay = [
+              item.番号,
+              item.定理名,
+              item.何の定理か,
+              ref,
+              formula
+            ]
+              .join(" ")
+              .toLowerCase();
+
+
+            return `
+              <article
+                data-q="${hay.replace(/"/g, "&quot;")}"
+              >
+
+                <div class="no">
+                  ${escapeHtml(id)}
+                </div>
+
+                <h2>
+                  ${escapeHtml(item.定理名 || "")}
+                </h2>
+
+                <div class="formula">
+                  ${toMath(formula)}
+                </div>
+
+                <p>
+                  ${escapeHtml(
+                    item.何の定理か || ""
+                  ).replaceAll("\n", "<br>")}
+                </p>
+
+                <p>
+                  参照元: ${refHtml}
+                </p>
+
+              </article>
+            `;
+          })
+          .join("");
+
 
         return typeset();
       })
+
       .catch(err => {
-        listEl.textContent = "読み込み失敗: " + err;
+
+        listEl.textContent =
+          "読み込み失敗: " + err;
+
       });
+
 
     qEl.addEventListener("input", () => {
-      const q = qEl.value.trim().toLowerCase();
 
-      document.querySelectorAll("#list article").forEach(el => {
-        el.classList.toggle(
-          "hidden",
-          !(!q || (el.dataset.q || "").includes(q))
-        );
-      });
+      const q =
+        qEl.value
+          .trim()
+          .toLowerCase();
+
+
+      document
+        .querySelectorAll("#list article")
+        .forEach(el => {
+
+          el.classList.toggle(
+            "hidden",
+            !(
+              !q ||
+              (el.dataset.q || "")
+                .includes(q)
+            )
+          );
+
+        });
     });
 
-    window.addEventListener("resize", fitMath);
+
+    window.addEventListener(
+      "resize",
+      fitMath
+    );
+
   </script>
+
 </body>
 </html>
