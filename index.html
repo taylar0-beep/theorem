@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -216,17 +217,6 @@
      * ==========================================================
      * Unicode数式要素
      * ==========================================================
-     *
-     * Unicode文字、数字、結合文字を許可。
-     *
-     * 例：
-     * W_G
-     * Ṽσ
-     * ℱ
-     * ℓ
-     * α
-     * β
-     * σ
      */
     const UNICODE_ATOM =
       "[\\p{L}\\p{N}\\p{M}_⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+";
@@ -234,27 +224,16 @@
 
     /*
      * ==========================================================
-     * 特殊な2つの分数変換
+     * 特殊な微分式
      * ==========================================================
      *
-     * ① d[Fₚₕᵧₛ + Φ_A]/dt
-     *
-     *     ↓
-     *
-     * \frac{d[Fₚₕᵧₛ + Φ_A]}{dt}
-     *
-     *
-     * ② dS_{gen}/dt
-     *
-     *     ↓
-     *
-     * \frac{dS_{gen}}{dt}
+     * d[Fₚₕᵧₛ + Φ_A]/dt
+     * dS_{gen}/dt
      */
     function convertSpecialFractions(s) {
 
       /*
-       * ①
-       * 空白が多少違っていても対応。
+       * d[Fₚₕᵧₛ + Φ_A]/dt
        */
       s = s.replace(
         /d\[Fₚₕᵧₛ\s*\+\s*Φ_A\]\/dt/gu,
@@ -263,7 +242,7 @@
 
 
       /*
-       * ②
+       * dS_{gen}/dt
        */
       s = s.replace(
         /dS_\{gen\}\/dt/gu,
@@ -277,33 +256,79 @@
 
     /*
      * ==========================================================
-     * minᵤ{...} の表示用括弧への変換
+     * min / max の表示用波括弧
      * ==========================================================
      *
-     * LaTeXでは
+     * MathJaxでは
      *
-     * minᵤ{ ... }
+     * min{...}
      *
-     * の { } はグループ指定として扱われるため、
-     * そのままでは括弧が表示されない。
+     * の { } は表示用の括弧ではないため消える。
      *
      * そこで、
      *
-     * minᵤ{ ... }
+     * min{...}
+     * max{...}
+     * minᵤ{...}
+     * maxᵤ{...}
      *
-     *     ↓
+     * を表示用の \left\{...\right\} に変換する。
      *
-     * \min_{u}\left\{ ... \right\}
-     *
-     * に変換する。
-     *
-     * 現状は、この形式だけを対象にする。
+     * 先にこの処理を行い、
+     * その後で中身の B/r などを分数化する。
      */
-    function convertMinBraces(s) {
+
+
+    /*
+     * minᵤ{...}
+     */
+    function convertMinUBraces(s) {
 
       s = s.replace(
         /minᵤ\{([^{}]*)\}/gu,
         "\\min_{u}\\left\\{$1\\right\\}"
+      );
+
+      return s;
+    }
+
+
+    /*
+     * maxᵤ{...}
+     */
+    function convertMaxUBraces(s) {
+
+      s = s.replace(
+        /maxᵤ\{([^{}]*)\}/gu,
+        "\\max_{u}\\left\\{$1\\right\\}"
+      );
+
+      return s;
+    }
+
+
+    /*
+     * min{...}
+     */
+    function convertMinBraces(s) {
+
+      s = s.replace(
+        /min\{([^{}]*)\}/gu,
+        "\\min\\left\\{$1\\right\\}"
+      );
+
+      return s;
+    }
+
+
+    /*
+     * max{...}
+     */
+    function convertMaxBraces(s) {
+
+      s = s.replace(
+        /max\{([^{}]*)\}/gu,
+        "\\max\\left\\{$1\\right\\}"
       );
 
       return s;
@@ -359,7 +384,6 @@
      *
      * dW/dt
      * dW_G/dt
-     * dṼσ/dσ
      */
     function convertNormalDerivativeFractions(s) {
 
@@ -398,9 +422,6 @@
      * ==========================================================
      * Δによる差分の自動分数化
      * ==========================================================
-     *
-     * ΔW/Δt
-     * ΔṼσ/Δσ
      */
     function convertDeltaFractions(s) {
 
@@ -441,7 +462,6 @@
      * ==========================================================
      *
      * (a+b)/(c+d)
-     * (x+y)/(σ+ℓ)
      */
     function convertParenthesizedFractions(s) {
 
@@ -460,15 +480,32 @@
      * 単純な分数
      * ==========================================================
      *
-     * W_G/t
+     * 1/(κm)
+     * B/r
      * a/b
-     * x²/y
      *
-     * すでに \frac になっているものには、
+     * 注意：
+     * すでに \frac になっている部分には
      * なるべく干渉しない。
+     * ==========================================================
      */
     function convertSimpleFractions(s) {
 
+      /*
+       * まず括弧付き分母。
+       *
+       * 例：
+       * 1/(κm)
+       */
+      s = s.replace(
+        /([A-Za-z0-9₀₁₂₃₄₅₆₇₈₉α-ωΑ-ΩℱℓΦσμλπρτ]+)\/\(([^()]+)\)/gu,
+        "\\frac{$1}{$2}"
+      );
+
+
+      /*
+       * 単純な A/B
+       */
       const pattern =
         new RegExp(
           "(?<![\\\\A-Za-z0-9_}])" +
@@ -502,75 +539,11 @@
 
     /*
      * ==========================================================
-     * 数式全体を正規化
+     * Unicode上付き・下付き
      * ==========================================================
      */
-    function normalizeFormula(src) {
+    function convertUnicodeScripts(s) {
 
-      let s = String(src || "");
-
-
-      /*
-       * 全角マイナスを半角へ。
-       */
-      s = s.replaceAll("−", "-");
-
-
-      /*
-       * --------------------------------------------------------
-       * 特殊な2つの分数
-       * --------------------------------------------------------
-       */
-      s = convertSpecialFractions(s);
-
-
-      /*
-       * --------------------------------------------------------
-       * minᵤ{...}
-       * --------------------------------------------------------
-       */
-      s = convertMinBraces(s);
-
-
-      /*
-       * --------------------------------------------------------
-       * 一般的な数式の自動分数化
-       * --------------------------------------------------------
-       */
-      s = convertDerivativeFractions(s);
-
-      s = convertNormalDerivativeFractions(s);
-
-      s = convertDeltaFractions(s);
-
-      s = convertParenthesizedFractions(s);
-
-      s = convertSimpleFractions(s);
-
-
-      /*
-       * --------------------------------------------------------
-       * Unicode記号をMathJax命令へ変換
-       * --------------------------------------------------------
-       */
-      s = s.replaceAll("∂", "\\partial ");
-      s = s.replaceAll("Δ", "\\Delta ");
-
-
-      /*
-       * --------------------------------------------------------
-       * 一部のUnicode上付き・下付き文字を
-       * MathJaxで自然に扱える形にするための変換
-       * --------------------------------------------------------
-       *
-       * 例：
-       * V₀ → V_0
-       * T₀ → T_0
-       * W² → W^2
-       *
-       * 既存のLaTeXには干渉しにくいよう、
-       * Unicode文字のみを対象にする。
-       */
       const subscriptMap = {
         "₀": "0",
         "₁": "1",
@@ -583,6 +556,7 @@
         "₈": "8",
         "₉": "9"
       };
+
 
       const superscriptMap = {
         "⁰": "0",
@@ -599,7 +573,11 @@
 
 
       /*
-       * Unicode下付き数字
+       * Unicode下付き
+       *
+       * 例：
+       * V₀ → V_0
+       * p꜀ᵣᵢₜ はそのまま保持
        */
       s = s.replace(
         /([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([₀₁₂₃₄₅₆₇₈₉]+)/gu,
@@ -607,7 +585,9 @@
 
           const digits =
             [...sub]
-              .map(ch => subscriptMap[ch] || ch)
+              .map(ch =>
+                subscriptMap[ch] || ch
+              )
               .join("");
 
           return `${base}_${digits}`;
@@ -616,7 +596,7 @@
 
 
       /*
-       * Unicode上付き数字
+       * Unicode上付き
        */
       s = s.replace(
         /([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/gu,
@@ -624,12 +604,86 @@
 
           const digits =
             [...sup]
-              .map(ch => superscriptMap[ch] || ch)
+              .map(ch =>
+                superscriptMap[ch] || ch
+              )
               .join("");
 
           return `${base}^${digits}`;
         }
       );
+
+
+      return s;
+    }
+
+
+    /*
+     * ==========================================================
+     * 数式全体を正規化
+     * ==========================================================
+     */
+    function normalizeFormula(src) {
+
+      let s = String(src || "");
+
+
+      /*
+       * 全角マイナス
+       */
+      s = s.replaceAll("−", "-");
+
+
+      /*
+       * --------------------------------------------------------
+       * 特殊な分数
+       * --------------------------------------------------------
+       */
+      s = convertSpecialFractions(s);
+
+
+      /*
+       * --------------------------------------------------------
+       * min / max の表示用波括弧
+       *
+       * ★ここを分数変換より先に行う。
+       * --------------------------------------------------------
+       */
+      s = convertMinUBraces(s);
+      s = convertMaxUBraces(s);
+      s = convertMinBraces(s);
+      s = convertMaxBraces(s);
+
+
+      /*
+       * --------------------------------------------------------
+       * 一般的な分数
+       * --------------------------------------------------------
+       */
+      s = convertDerivativeFractions(s);
+
+      s = convertNormalDerivativeFractions(s);
+
+      s = convertDeltaFractions(s);
+
+      s = convertParenthesizedFractions(s);
+
+      s = convertSimpleFractions(s);
+
+
+      /*
+       * --------------------------------------------------------
+       * Unicode数学記号
+       * --------------------------------------------------------
+       */
+      s = s.replaceAll("∂", "\\partial ");
+      s = s.replaceAll("Δ", "\\Delta ");
+
+
+      /*
+       * Unicode添字
+       */
+      s = convertUnicodeScripts(s);
 
 
       return s;
@@ -651,8 +705,6 @@
 
           /*
            * すでにLaTeXデリミタがある場合はそのまま。
-           *
-           * それ以外は $$...$$ にする。
            */
           const raw =
             /\$|\\\(|\\\[|\\begin/.test(line)
@@ -743,7 +795,7 @@
      * Google Apps Scriptからデータ取得
      * ==========================================================
      *
-     * 一時的なエラーの場合は最大3回再試行。
+     * 一時的なエラーなら最大3回再試行。
      */
     async function fetchData(maxRetries = 3) {
 
@@ -791,7 +843,7 @@
 
 
           /*
-           * Google側のHTMLエラー画面
+           * HTMLエラーページの検出
            */
           const trimmed =
             text.trim();
@@ -810,7 +862,7 @@
 
 
           /*
-           * JSONとして解析
+           * JSON解析
            */
           const data =
             JSON.parse(text);
@@ -832,16 +884,13 @@
           lastError = err;
 
 
-          /*
-           * 最後の試行なら終了
-           */
           if (attempt === maxRetries) {
             break;
           }
 
 
           /*
-           * 1秒、2秒と待って再試行
+           * 1秒 → 2秒と待って再試行
            */
           await new Promise(
             resolve =>
@@ -921,7 +970,7 @@
 
 
               /*
-               * 「中心式LaTeX」を優先
+               * 中心式LaTeXを優先
                */
               const formula =
                 item.中心式LaTeX ||
@@ -932,7 +981,7 @@
               /*
                * 検索対象
                *
-               * 数式そのものも含める。
+               * 数式も含める。
                */
               const hay = [
                 item.番号,
