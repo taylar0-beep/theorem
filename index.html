@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -10,7 +11,7 @@
       font-family: sans-serif;
       line-height: 1.6;
       max-width: 920px;
-      margin: 24px auto;
+      margin: 12px auto;
       padding: 0 12px;
     }
 
@@ -18,9 +19,14 @@
       position: sticky;
       top: 0;
       background: #fff;
-      padding: 12px 0 16px;
+      padding: 4px 0 10px;
       border-bottom: 1px solid #ddd;
       z-index: 10;
+    }
+
+    .toolbar h1 {
+      margin: 0 0 6px;
+      font-size: 1.5em;
     }
 
     #q {
@@ -31,7 +37,7 @@
       box-sizing: border-box;
     }
 
-    /* ★ 一覧をレスポンシブなグリッドにする */
+    /* PC・iPad：横幅が十分なら2列 */
     #list {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -82,15 +88,31 @@
       display: none;
     }
 
+    .error {
+      border: 1px solid #e0b4b4;
+      background: #fff5f5;
+      color: #a33;
+      padding: 14px;
+      margin-top: 16px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
     /* スマホは必ず1列 */
     @media (max-width: 640px) {
       body {
-        margin: 16px 0;
+        margin: 8px 0;
         padding: 0;
       }
 
       .toolbar {
-        padding: 12px 12px 16px;
+        padding: 4px 12px 10px;
+      }
+
+      .toolbar h1 {
+        margin: 0 0 6px;
+        font-size: 1.35em;
       }
 
       #list {
@@ -227,18 +249,100 @@
     }
 
 
-    fetch(API_URL, {
-      redirect: "follow"
-    })
-      .then(res => res.text())
+    async function fetchData(maxRetries = 3) {
 
-      .then(text => {
+      let lastError = null;
 
-        const items = JSON.parse(text)
-          .filter(item =>
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+
+        try {
+
+          const url =
+            API_URL +
+            (API_URL.includes("?") ? "&" : "?") +
+            "t=" +
+            Date.now();
+
+
+          const res = await fetch(url, {
+            redirect: "follow",
+            cache: "no-store"
+          });
+
+
+          const text = await res.text();
+
+
+          if (!res.ok) {
+            throw new Error(
+              `Google Apps Script が HTTP ${res.status} を返しました。`
+            );
+          }
+
+
+          const trimmed = text.trim();
+
+
+          if (
+            trimmed.startsWith("<!DOCTYPE") ||
+            trimmed.startsWith("<html") ||
+            trimmed.startsWith("<HTML")
+          ) {
+            throw new Error(
+              "Google Apps Script からJSONではなくHTMLが返されました。"
+            );
+          }
+
+
+          const data = JSON.parse(text);
+
+
+          if (!Array.isArray(data)) {
+            throw new Error(
+              "Google Apps Script の返却データが配列ではありません。"
+            );
+          }
+
+
+          return data;
+
+
+        } catch (err) {
+
+          lastError = err;
+
+          if (attempt === maxRetries) {
+            break;
+          }
+
+
+          await new Promise(resolve =>
+            setTimeout(resolve, attempt * 1000)
+          );
+        }
+      }
+
+
+      throw lastError ||
+        new Error("データ取得に失敗しました。");
+    }
+
+
+    async function loadItems() {
+
+      try {
+
+        listEl.textContent = "読み込み中...";
+
+
+        const data = await fetchData(3);
+
+
+        const items = data.filter(
+          item =>
             item.番号 ||
             item.定理名
-          );
+        );
 
 
         listEl.innerHTML = items
@@ -271,9 +375,6 @@
               "";
 
 
-            /*
-             * ★ 数式も検索対象に含める
-             */
             const hay = [
               item.番号,
               item.定理名,
@@ -318,15 +419,32 @@
           .join("");
 
 
-        return typeset();
-      })
+        await typeset();
 
-      .catch(err => {
 
-        listEl.textContent =
-          "読み込み失敗: " + err;
+      } catch (err) {
 
-      });
+        console.error(err);
+
+        listEl.innerHTML = `
+          <div class="error">
+            読み込みに失敗しました。
+
+            ${escapeHtml(
+              err && err.message
+                ? err.message
+                : String(err)
+            )}
+
+            Google Apps Script 側で一時的なエラーが発生している可能性があります。
+            少し時間を置いて再読み込みしてください。
+          </div>
+        `;
+      }
+    }
+
+
+    loadItems();
 
 
     qEl.addEventListener("input", () => {
@@ -356,10 +474,4 @@
 
     window.addEventListener(
       "resize",
-      fitMath
-    );
-
-  </script>
-
-</body>
-</html>
+fitMath ); </script> </body> </html>
