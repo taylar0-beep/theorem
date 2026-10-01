@@ -7,6 +7,10 @@
   <title>シン苫米地定理一覧</title>
 
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       font-family: sans-serif;
       line-height: 1.6;
@@ -29,19 +33,38 @@
       font-size: 1.5em;
     }
 
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 620px;
+    }
+
     #q {
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       max-width: 420px;
       font-size: 16px;
       padding: 8px 10px;
       box-sizing: border-box;
     }
 
-    /*
-     * PC・iPad：
-     * カード幅が340px以上確保できる場合は2列。
-     * 狭い場合は自動的に1列。
-     */
+    .reference-button {
+      display: inline-block;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f7f7f7;
+      color: #333;
+      text-decoration: none;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    .reference-button:hover {
+      background: #eee;
+    }
+
     #list {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -104,9 +127,33 @@
       overflow-wrap: anywhere;
     }
 
-    /*
-     * スマホは必ず1列
-     */
+    /* 参考リンク集 */
+    #reference-links {
+      margin-top: 40px;
+      padding: 20px 16px 32px;
+      border-top: 1px solid #ddd;
+      scroll-margin-top: 80px;
+    }
+
+    #reference-links h2 {
+      margin: 0 0 20px;
+    }
+
+    .reference-group {
+      margin: 0 0 24px;
+    }
+
+    .reference-group h3 {
+      margin: 0 0 8px;
+      font-size: 1em;
+    }
+
+    .reference-group a {
+      display: block;
+      margin: 7px 0;
+      overflow-wrap: anywhere;
+    }
+
     @media (max-width: 640px) {
       body {
         margin: 8px 0;
@@ -120,6 +167,15 @@
       .toolbar h1 {
         margin: 0 0 6px;
         font-size: 1.35em;
+      }
+
+      .search-row {
+        gap: 6px;
+      }
+
+      .reference-button {
+        padding: 8px 10px;
+        font-size: 13px;
       }
 
       #list {
@@ -147,6 +203,10 @@
       h2 {
         font-size: 1.02em;
       }
+
+      #reference-links {
+        padding: 20px 12px 32px;
+      }
     }
   </style>
 
@@ -162,7 +222,6 @@
           ["\\[", "\\]"]
         ]
       },
-
       chtml: {
         scale: 1,
         minScale: 0.5,
@@ -182,11 +241,18 @@
   <div class="toolbar">
     <h1>シン苫米地定理一覧</h1>
 
-    <input
-      id="q"
-      type="search"
-      placeholder="番号・定理名・数式・解説・参照元で検索"
-    >
+    <div class="search-row">
+      <input
+        id="q"
+        type="search"
+        placeholder="番号・定理名・数式・解説・参照元で検索"
+      >
+
+      <a
+        class="reference-button"
+        href="#reference-links"
+      >参考リンク集</a>
+    </div>
   </div>
 
   <div id="list">読み込み中...</div>
@@ -200,11 +266,6 @@
     const qEl = document.getElementById("q");
 
 
-    /*
-     * ==========================================================
-     * HTMLエスケープ
-     * ==========================================================
-     */
     function escapeHtml(s) {
       return String(s)
         .replaceAll("&", "&amp;")
@@ -214,131 +275,67 @@
 
 
     /*
-     * ==========================================================
      * Unicode数式要素
-     * ==========================================================
      */
     const UNICODE_ATOM =
       "[\\p{L}\\p{N}\\p{M}_⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+";
 
 
     /*
-     * ==========================================================
-     * 特殊な微分式
-     * ==========================================================
+     * 特殊な2つの分数
      *
      * d[Fₚₕᵧₛ + Φ_A]/dt
      * dS_{gen}/dt
      */
     function convertSpecialFractions(s) {
 
-      /*
-       * d[Fₚₕᵧₛ + Φ_A]/dt
-       */
       s = s.replace(
         /d\[Fₚₕᵧₛ\s*\+\s*Φ_A\]\/dt/gu,
         "\\frac{d[Fₚₕᵧₛ + Φ_A]}{dt}"
       );
 
-
-      /*
-       * dS_{gen}/dt
-       */
       s = s.replace(
         /dS_\{gen\}\/dt/gu,
         "\\frac{dS_{gen}}{dt}"
       );
 
-
       return s;
     }
-
-
-    /*
-     * ==========================================================
-     * min / max の表示用波括弧
-     * ==========================================================
-     *
-     * MathJaxでは
-     *
-     * min{...}
-     *
-     * の { } は表示用の括弧ではないため消える。
-     *
-     * そこで、
-     *
-     * min{...}
-     * max{...}
-     * minᵤ{...}
-     * maxᵤ{...}
-     *
-     * を表示用の \left\{...\right\} に変換する。
-     *
-     * 先にこの処理を行い、
-     * その後で中身の B/r などを分数化する。
-     */
 
 
     /*
      * minᵤ{...}
-     */
-    function convertMinUBraces(s) {
-
-      s = s.replace(
-        /minᵤ\{([^{}]*)\}/gu,
-        "\\min_{u}\\left\\{$1\\right\\}"
-      );
-
-      return s;
-    }
-
-
-    /*
-     * maxᵤ{...}
-     */
-    function convertMaxUBraces(s) {
-
-      s = s.replace(
-        /maxᵤ\{([^{}]*)\}/gu,
-        "\\max_{u}\\left\\{$1\\right\\}"
-      );
-
-      return s;
-    }
-
-
-    /*
-     * min{...}
+     *
+     * minᵤ{A}
+     * ↓
+     * \min_{u}\left\{A\right\}
      */
     function convertMinBraces(s) {
 
-      s = s.replace(
-        /min\{([^{}]*)\}/gu,
-        "\\min\\left\\{$1\\right\\}"
+      return s.replace(
+        /minᵤ\{([^{}]*)\}/gu,
+        "\\min_{u}\\left\\{$1\\right\\}"
       );
-
-      return s;
     }
 
 
     /*
-     * max{...}
+     * T21専用：
+     * max{...} の {} を表示する
+     *
+     * p > p꜀ᵣᵢₜ = 1/(κm) max{β,B/r}
      */
-    function convertMaxBraces(s) {
+    function convertT21MaxBraces(s) {
 
-      s = s.replace(
+      return s.replace(
         /max\{([^{}]*)\}/gu,
         "\\max\\left\\{$1\\right\\}"
       );
-
-      return s;
     }
 
 
     /*
-     * ==========================================================
-     * 偏微分の自動分数化
-     * ==========================================================
+     * 偏微分
      *
      * ∂W_G/∂t
      * ∂Ṽσ/∂σ
@@ -356,31 +353,21 @@
           "gu"
         );
 
-
-      s = s.replace(
+      return s.replace(
         pattern,
-        (match, sign, numerator, denominator) => {
-
-          return (
-            sign +
-            "\\frac{\\partial " +
-            numerator +
-            "}{\\partial " +
-            denominator +
-            "}"
-          );
-        }
+        (match, sign, numerator, denominator) =>
+          sign +
+          "\\frac{\\partial " +
+          numerator +
+          "}{\\partial " +
+          denominator +
+          "}"
       );
-
-
-      return s;
     }
 
 
     /*
-     * ==========================================================
-     * 通常の微分の自動分数化
-     * ==========================================================
+     * 通常の微分
      *
      * dW/dt
      * dW_G/dt
@@ -397,31 +384,24 @@
           "gu"
         );
 
-
-      s = s.replace(
+      return s.replace(
         pattern,
-        (match, sign, numerator, denominator) => {
-
-          return (
-            sign +
-            "\\frac{d" +
-            numerator +
-            "}{d" +
-            denominator +
-            "}"
-          );
-        }
+        (match, sign, numerator, denominator) =>
+          sign +
+          "\\frac{d" +
+          numerator +
+          "}{d" +
+          denominator +
+          "}"
       );
-
-
-      return s;
     }
 
 
     /*
-     * ==========================================================
-     * Δによる差分の自動分数化
-     * ==========================================================
+     * 差分
+     *
+     * ΔW/Δt
+     * ΔṼσ/Δσ
      */
     function convertDeltaFractions(s) {
 
@@ -435,77 +415,41 @@
           "gu"
         );
 
-
-      s = s.replace(
+      return s.replace(
         pattern,
-        (match, sign, numerator, denominator) => {
-
-          return (
-            sign +
-            "\\frac{\\Delta " +
-            numerator +
-            "}{\\Delta " +
-            denominator +
-            "}"
-          );
-        }
+        (match, sign, numerator, denominator) =>
+          sign +
+          "\\frac{\\Delta " +
+          numerator +
+          "}{\\Delta " +
+          denominator +
+          "}"
       );
-
-
-      return s;
     }
 
 
     /*
-     * ==========================================================
      * 括弧付き分数
-     * ==========================================================
      *
      * (a+b)/(c+d)
      */
     function convertParenthesizedFractions(s) {
 
-      const pattern =
-        /(\([^()]+\))\/(\([^()]+\))/gu;
-
       return s.replace(
-        pattern,
+        /(\([^()]+\))\/(\([^()]+\))/gu,
         "\\frac{$1}{$2}"
       );
     }
 
 
     /*
-     * ==========================================================
      * 単純な分数
-     * ==========================================================
      *
-     * 1/(κm)
-     * B/r
+     * W_G/t
      * a/b
-     *
-     * 注意：
-     * すでに \frac になっている部分には
-     * なるべく干渉しない。
-     * ==========================================================
      */
     function convertSimpleFractions(s) {
 
-      /*
-       * まず括弧付き分母。
-       *
-       * 例：
-       * 1/(κm)
-       */
-      s = s.replace(
-        /([A-Za-z0-9₀₁₂₃₄₅₆₇₈₉α-ωΑ-ΩℱℓΦσμλπρτ]+)\/\(([^()]+)\)/gu,
-        "\\frac{$1}{$2}"
-      );
-
-
-      /*
-       * 単純な A/B
-       */
       const pattern =
         new RegExp(
           "(?<![\\\\A-Za-z0-9_}])" +
@@ -520,29 +464,22 @@
           "gu"
         );
 
-
       return s.replace(
         pattern,
-        (match, numerator, denominator) => {
-
-          return (
-            "\\frac{" +
-            numerator +
-            "}{" +
-            denominator +
-            "}"
-          );
-        }
+        (match, numerator, denominator) =>
+          "\\frac{" +
+          numerator +
+          "}{" +
+          denominator +
+          "}"
       );
     }
 
 
     /*
-     * ==========================================================
-     * Unicode上付き・下付き
-     * ==========================================================
+     * Unicode下付き・上付き数字
      */
-    function convertUnicodeScripts(s) {
+    function convertUnicodeSubSup(s) {
 
       const subscriptMap = {
         "₀": "0",
@@ -556,7 +493,6 @@
         "₈": "8",
         "₉": "9"
       };
-
 
       const superscriptMap = {
         "⁰": "0",
@@ -572,22 +508,13 @@
       };
 
 
-      /*
-       * Unicode下付き
-       *
-       * 例：
-       * V₀ → V_0
-       * p꜀ᵣᵢₜ はそのまま保持
-       */
       s = s.replace(
         /([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([₀₁₂₃₄₅₆₇₈₉]+)/gu,
         (match, base, sub) => {
 
           const digits =
             [...sub]
-              .map(ch =>
-                subscriptMap[ch] || ch
-              )
+              .map(ch => subscriptMap[ch] || ch)
               .join("");
 
           return `${base}_${digits}`;
@@ -595,71 +522,36 @@
       );
 
 
-      /*
-       * Unicode上付き
-       */
-      s = s.replace(
+      return s.replace(
         /([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/gu,
         (match, base, sup) => {
 
           const digits =
             [...sup]
-              .map(ch =>
-                superscriptMap[ch] || ch
-              )
+              .map(ch => superscriptMap[ch] || ch)
               .join("");
 
           return `${base}^${digits}`;
         }
       );
-
-
-      return s;
     }
 
 
     /*
-     * ==========================================================
-     * 数式全体を正規化
-     * ==========================================================
+     * 数式全体の正規化
      */
     function normalizeFormula(src) {
 
       let s = String(src || "");
 
-
-      /*
-       * 全角マイナス
-       */
       s = s.replaceAll("−", "-");
 
-
-      /*
-       * --------------------------------------------------------
-       * 特殊な分数
-       * --------------------------------------------------------
-       */
       s = convertSpecialFractions(s);
 
-
-      /*
-       * --------------------------------------------------------
-       * min / max の表示用波括弧
-       *
-       * ★ここを分数変換より先に行う。
-       * --------------------------------------------------------
-       */
-      s = convertMinUBraces(s);
-      s = convertMaxUBraces(s);
       s = convertMinBraces(s);
-      s = convertMaxBraces(s);
 
+      s = convertT21MaxBraces(s);
 
-      /*
-       * --------------------------------------------------------
-       * 一般的な分数
-       * --------------------------------------------------------
-       */
       s = convertDerivativeFractions(s);
 
       s = convertNormalDerivativeFractions(s);
@@ -670,31 +562,16 @@
 
       s = convertSimpleFractions(s);
 
-
-      /*
-       * --------------------------------------------------------
-       * Unicode数学記号
-       * --------------------------------------------------------
-       */
       s = s.replaceAll("∂", "\\partial ");
+
       s = s.replaceAll("Δ", "\\Delta ");
 
-
-      /*
-       * Unicode添字
-       */
-      s = convertUnicodeScripts(s);
-
+      s = convertUnicodeSubSup(s);
 
       return s;
     }
 
 
-    /*
-     * ==========================================================
-     * MathJax用HTMLへ変換
-     * ==========================================================
-     */
     function toMath(src) {
 
       return normalizeFormula(src)
@@ -703,14 +580,10 @@
         .filter(Boolean)
         .map(line => {
 
-          /*
-           * すでにLaTeXデリミタがある場合はそのまま。
-           */
           const raw =
             /\$|\\\(|\\\[|\\begin/.test(line)
               ? line
               : `$$${line}$$`;
-
 
           return `
             <div class="formula-line">
@@ -722,11 +595,6 @@
     }
 
 
-    /*
-     * ==========================================================
-     * 数式の横幅フィット
-     * ==========================================================
-     */
     function fitMath() {
 
       document
@@ -736,31 +604,24 @@
           el.style.transform = "none";
           el.style.height = "";
 
-
           const parentW =
             el.parentElement.clientWidth;
 
-
           const w =
             el.scrollWidth;
-
 
           if (!parentW || w <= parentW) {
             return;
           }
 
-
           const scale =
             parentW / w;
-
 
           el.style.transformOrigin =
             "center top";
 
-
           el.style.transform =
             `scale(${scale})`;
-
 
           el.style.height =
             el.getBoundingClientRect().height + "px";
@@ -768,11 +629,6 @@
     }
 
 
-    /*
-     * ==========================================================
-     * MathJax組版
-     * ==========================================================
-     */
     function typeset() {
 
       if (
@@ -785,22 +641,17 @@
           .then(fitMath);
       }
 
-
       fitMath();
     }
 
 
     /*
-     * ==========================================================
-     * Google Apps Scriptからデータ取得
-     * ==========================================================
-     *
-     * 一時的なエラーなら最大3回再試行。
+     * Google Apps Script
+     * 一時的なエラーには3回まで再試行
      */
     async function fetchData(maxRetries = 3) {
 
       let lastError = null;
-
 
       for (
         let attempt = 1;
@@ -810,15 +661,11 @@
 
         try {
 
-          /*
-           * キャッシュ回避
-           */
           const url =
             API_URL +
             (API_URL.includes("?") ? "&" : "?") +
             "t=" +
             Date.now();
-
 
           const res =
             await fetch(url, {
@@ -826,14 +673,10 @@
               cache: "no-store"
             });
 
-
           const text =
             await res.text();
 
 
-          /*
-           * HTTPエラー
-           */
           if (!res.ok) {
 
             throw new Error(
@@ -842,9 +685,6 @@
           }
 
 
-          /*
-           * HTMLエラーページの検出
-           */
           const trimmed =
             text.trim();
 
@@ -861,9 +701,6 @@
           }
 
 
-          /*
-           * JSON解析
-           */
           const data =
             JSON.parse(text);
 
@@ -878,20 +715,14 @@
 
           return data;
 
-
         } catch (err) {
 
           lastError = err;
-
 
           if (attempt === maxRetries) {
             break;
           }
 
-
-          /*
-           * 1秒 → 2秒と待って再試行
-           */
           await new Promise(
             resolve =>
               setTimeout(
@@ -902,20 +733,15 @@
         }
       }
 
-
       throw (
         lastError ||
-        new Error(
-          "データ取得に失敗しました。"
-        )
+        new Error("データ取得に失敗しました。")
       );
     }
 
 
     /*
-     * ==========================================================
-     * 一覧読み込み
-     * ==========================================================
+     * 一覧表示
      */
     async function loadItems() {
 
@@ -929,9 +755,6 @@
           await fetchData(3);
 
 
-        /*
-         * 番号または定理名がある行だけ表示
-         */
         const items =
           data.filter(
             item =>
@@ -947,10 +770,8 @@
               const id =
                 item.番号 || "";
 
-
               const ref =
                 item["参照元（最新優先）"] || "";
-
 
               const href =
                 item.アドレス || "";
@@ -969,9 +790,6 @@
                 : escapeHtml(ref);
 
 
-              /*
-               * 中心式LaTeXを優先
-               */
               const formula =
                 item.中心式LaTeX ||
                 item.中心式 ||
@@ -979,9 +797,7 @@
 
 
               /*
-               * 検索対象
-               *
-               * 数式も含める。
+               * 検索対象には数式も含める
                */
               const hay = [
                 item.番号,
@@ -1006,18 +822,15 @@
                     ${escapeHtml(id)}
                   </div>
 
-
                   <h2>
                     ${escapeHtml(
                       item.定理名 || ""
                     )}
                   </h2>
 
-
                   <div class="formula">
                     ${toMath(formula)}
                   </div>
-
 
                   <p>
                     ${escapeHtml(
@@ -1027,7 +840,6 @@
                       "<br>"
                     )}
                   </p>
-
 
                   <p>
                     参照元: ${refHtml}
@@ -1039,16 +851,11 @@
             .join("");
 
 
-        /*
-         * MathJaxで組版
-         */
         await typeset();
-
 
       } catch (err) {
 
         console.error(err);
-
 
         listEl.innerHTML = `
           <div class="error">
@@ -1068,19 +875,9 @@
     }
 
 
-    /*
-     * ==========================================================
-     * 初回読み込み
-     * ==========================================================
-     */
     loadItems();
 
 
-    /*
-     * ==========================================================
-     * 検索
-     * ==========================================================
-     */
     qEl.addEventListener(
       "input",
       () => {
@@ -1112,17 +909,243 @@
     );
 
 
-    /*
-     * ==========================================================
-     * ブラウザ幅変更時に数式を再計算
-     * ==========================================================
-     */
     window.addEventListener(
       "resize",
       fitMath
     );
-
   </script>
+
+
+  <!-- ========================================================
+       参考リンク集
+       
+       ★ このエリアは今後リンクを追加・削除するときに
+         編集しやすいよう、HTMLの一番下にまとめています。
+       ======================================================== -->
+
+  <section id="reference-links">
+
+    <h2>参考リンク集</h2>
+
+
+    <div class="reference-group">
+      <h3>認知戦・国防拠点大学</h3>
+
+      <a
+        href="https://tomabechi.jp/TomabechiNDUpaperJApublic.pdf"
+        target="_blank"
+        rel="noopener"
+      >
+        国防拠点大学認知戦講義論文・修正済み和訳
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiNDUpaperENpublic.pdf"
+        target="_blank"
+        rel="noopener"
+      >
+        NDU Cognitive Warfare Lecture Paper・English Original
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiSlidesSCJA20260422.pdf"
+        target="_blank"
+        rel="noopener"
+      >
+        4月22日スティムソン講義・日本語版スライド
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiSlidesSCEN20260422.pdf"
+        target="_blank"
+        rel="noopener"
+      >
+        April 22, 2026 Stimson Cognitive Warfare Lecture・English Slides
+      </a>
+
+      <a
+        href="https://www.stimson.org/event/cognitive-warfare-ai-and-security-insights-from-east-asia/"
+        target="_blank"
+        rel="noopener"
+      >
+        スティムソン講義動画・Stimson Lecture
+      </a>
+    </div>
+
+
+    <div class="reference-group">
+      <h3>未来原点認知時間理論</h3>
+
+      <a
+        href="https://tomabechi.jp/TomabechiTimeTheoryMin6JA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        未来原点認知時間理論・日本語版
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiTimeTheoryMin6EN.html"
+        target="_blank"
+        rel="noopener"
+      >
+        Cognitive Time Theory・English Version
+      </a>
+    </div>
+
+
+    <div class="reference-group">
+      <h3>四法印・定理関連</h3>
+
+      <a
+        href="https://tomabechi.jp/TomabechiFourDharmaSealsMini13JA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        論文・日本語版
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiFourDharmaSealsMini13EN.html"
+        target="_blank"
+        rel="noopener"
+      >
+        English Paper
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiFourDharmaSealsMini13LayJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        公式解説・日本語版
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiFourDharmaSealsMini13LayEN.html"
+        target="_blank"
+        rel="noopener"
+      >
+        Lay Explanations・English
+      </a>
+    </div>
+
+
+    <div class="reference-group">
+      <h3>定理27「無明起行」</h3>
+
+      <a
+        href="https://tomabechi.jp/TomabechiAvijjaSankharaLayJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        数式解説版・日本語
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiAvijjaSankharaLayEN.html"
+        target="_blank"
+        rel="noopener"
+      >
+        数式解説版・英語
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiAvijjaSankharaJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        学術版論文・日本語
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiAvijjaSankharaEN.html"
+        target="_blank"
+        rel="noopener"
+      >
+        学術版論文・英語
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiSynthesisAvijjaSankharaJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        定理27・総括的解説
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiSynthesisAvijjaSankharaLayJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        定理27・総括的解説の数式解説版
+      </a>
+    </div>
+
+
+    <div class="reference-group">
+      <h3>定理28–32・苫米地認知宇宙論</h3>
+
+      <a
+        href="https://tomabechi.jp/TomabechiTheorems28to32JA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        苫米地認知宇宙論～仏法数理厳密証明・学術版
+      </a>
+
+      <a
+        href="https://tomabechi.jp/TomabechiTheorems28to32LayJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        定理28–32・やさしい完全版
+      </a>
+    </div>
+
+
+    <!-- ======================================================
+         今後の追加・編集はここを中心に行う
+         ====================================================== -->
+
+    <div class="reference-group">
+      <h3>認知潜在ポテンシャル自由エネルギー理論</h3>
+
+      <a
+        href="https://tomabechi.jp/CognitiveLatentPotentialFreeEnergyTheoryJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        認知潜在ポテンシャル自由エネルギー理論・日本語 学術版
+      </a>
+
+      <a
+        href="https://tomabechi.jp/CognitiveLatentPotentialFreeEnergyTheoryEN.html"
+        target="_blank"
+        rel="noopener"
+      >
+        Cognitive Latent Potential Free-Energy Theory・English Academic Edition
+      </a>
+
+      <a
+        href="https://tomabechi.jp/CognitiveLatentPotentialFreeEnergyTheoryLayJA.html"
+        target="_blank"
+        rel="noopener"
+      >
+        認知潜在ポテンシャル自由エネルギー理論・日本語 完全解説版（Lay Edition）
+      </a>
+
+      <a
+        href="https://tomabechi.jp/CognitiveLatentPotentialFreeEnergyTheoryLayEN.html"
+        target="_blank"
+        rel="noopener"
+      >
+        Cognitive Latent Potential Free-Energy Theory・English Authorized Lay Complete Edition
+      </a>
+    </div>
+
+  </section>
 
 </body>
 </html>
