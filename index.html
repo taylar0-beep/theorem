@@ -28,7 +28,6 @@
     .formula mjx-container { max-width: none; overflow: visible; }
     .formula mjx-container[display="true"] { margin: 0.2em 0; }
     .panel { margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee; }
-    .panel-label { margin: 0 0 6px; color: #666; font-size: 0.85em; }
     .panel p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
     .empty { color: #999; }
     body.mode-symbol .explain { display: none; }
@@ -81,6 +80,16 @@
 
     const UNICODE_ATOM = "[\\p{L}\\p{N}\\p{M}_⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+";
 
+    function convertArgOpt(s) {
+      const subMap = { "ᵤ": "u", "ᵢ": "i", "ⱼ": "j", "ₙ": "n", "ₚ": "p", "ₖ": "k", "ₗ": "l", "ₘ": "m", "ₛ": "s", "ₜ": "t" };
+      const op = (name, sub) => `\\operatorname*{arg${name}}_{${sub}}`;
+      s = s.replace(/\u2061/g, "");
+      s = s.replace(/arg\s*(min|max)_\{([^{}]+)\}/gi, (_, name, sub) => op(name.toLowerCase(), sub));
+      s = s.replace(/arg\s*(min|max)_([^\s,⟹⇒=∫]+)/gi, (_, name, sub) => op(name.toLowerCase(), sub));
+      s = s.replace(/arg\s*(min|max)([ᵤᵢⱼₙₚₖₗₘₛₜ]+)/gi, (_, name, sub) => op(name.toLowerCase(), [...sub].map(ch => subMap[ch] || ch).join("")));
+      s = s.replace(/arg\s*(min|max)([πμπuα])/gi, (_, name, sub) => op(name.toLowerCase(), sub));
+      return s;
+    }
     function convertSpecialFractions(s) {
       s = s.replace(/d\[Fₚₕᵧₛ\s*\+\s*Φ_A\]\/dt/gu, "\\frac{d[Fₚₕᵧₛ + Φ_A]}{dt}");
       s = s.replace(/dS_\{gen\}\/dt/gu, "\\frac{dS_{gen}}{dt}");
@@ -119,6 +128,7 @@
     }
     function normalizeFormula(src) {
       let s = String(src || "").replaceAll("−", "-");
+      s = convertArgOpt(s);
       s = convertSpecialFractions(s);
       s = convertMinBraces(s);
       s = convertT21MaxBraces(s);
@@ -244,13 +254,8 @@
               <h2>${escapeHtml(item.定理名 || "")}</h2>
               <div class="formula">${toMath(formula)}</div>
               <div class="panel">
-                <div class="explain">
-                  
-                  ${panelText(item.何の定理か, "（解説なし）")}
-                </div>
-                <div class="symbol">
-                  ${panelText(symbols, "（未入力）")}
-                </div>
+                <div class="explain">${panelText(item.何の定理か, "（解説なし）")}</div>
+                <div class="symbol">${panelText(symbols, "（未入力）")}</div>
               </div>
               <p>参照元: ${refHtml}</p>
             </article>`;
