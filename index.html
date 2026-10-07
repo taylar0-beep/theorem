@@ -19,8 +19,8 @@
     }
     .tool-button:hover, .reference-button:hover { background: #eee; }
     body.mode-symbol .tool-button { background: #333; color: #fff; border-color: #333; }
-    #list { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
-    article { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 0; min-width: 0; box-sizing: border-box; }
+    #list { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; overflow-anchor: none; }
+    article { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 0; min-width: 0; box-sizing: border-box; overflow-anchor: none; }
     .no { color: #666; font-size: 0.9em; }
     h2 { margin: 4px 0 12px; font-size: 1.1em; overflow-wrap: anywhere; }
     .formula { background: #f7f4ea; padding: 16px 0; text-align: center; overflow: visible; }
@@ -183,21 +183,13 @@
     }
     function visibleFormulaLine() {
       const mark = document.querySelector(".toolbar").getBoundingClientRect().bottom + 8;
-      const lines = [...document.querySelectorAll("#list article:not(.hidden)")]
-        .map(el => el.querySelector(".formula-line"))
-        .filter(Boolean);
-      let best = null;
-      let bestScore = Infinity;
-      lines.forEach(el => {
+      const articles = [...document.querySelectorAll("#list article:not(.hidden)")];
+      const article = articles.find(el => {
         const rect = el.getBoundingClientRect();
-        if (rect.bottom < mark) return;
-        const score = Math.abs(rect.top - mark);
-        if (score < bestScore) {
-          bestScore = score;
-          best = el;
-        }
-      });
-      return best;
+        return rect.top <= mark && rect.bottom > mark;
+      }) || articles.find(el => el.getBoundingClientRect().bottom > mark);
+      if (!article) return null;
+      return article.querySelector(".formula-line") || article;
     }
     function keepFormulaLine(anchor, before) {
       if (!anchor) return;
@@ -206,7 +198,7 @@
       const root = document.documentElement;
       const prev = root.style.scrollBehavior;
       root.style.scrollBehavior = "auto";
-      window.scrollTo({ top: window.scrollY + delta, behavior: "instant" });
+      window.scrollTo(0, window.scrollY + delta);
       root.style.scrollBehavior = prev;
     }
     async function fetchData(maxRetries = 3) {
@@ -276,6 +268,7 @@
       const on = document.body.classList.toggle("mode-symbol");
       modeBtn.textContent = on ? "解説に戻す" : "記号説明";
       keepFormulaLine(anchor, before);
+      requestAnimationFrame(() => keepFormulaLine(anchor, before));
     });
     qEl.addEventListener("input", () => {
       const q = qEl.value.trim().toLowerCase();
