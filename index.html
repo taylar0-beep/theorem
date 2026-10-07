@@ -150,14 +150,64 @@
         el.style.height = el.getBoundingClientRect().height + "px";
       });
     }
+    function lockPanels() {
+      document.querySelectorAll("#list .panel").forEach(panel => {
+        const explain = panel.querySelector(".explain");
+        const symbol = panel.querySelector(".symbol");
+        if (!explain || !symbol) return;
+        explain.style.display = "block";
+        symbol.style.display = "none";
+        const h1 = explain.offsetHeight;
+        explain.style.display = "none";
+        symbol.style.display = "block";
+        const h2 = symbol.offsetHeight;
+        explain.style.display = "";
+        symbol.style.display = "";
+        panel.style.minHeight = Math.max(h1, h2) + "px";
+      });
+    }
     function typeset() {
-      if (window.MathJax && MathJax.typesetPromise) return MathJax.typesetPromise([listEl]).then(fitMath);
+      if (window.MathJax && MathJax.typesetPromise) {
+        return MathJax.typesetPromise([listEl]).then(() => {
+          fitMath();
+          lockPanels();
+        });
+      }
       fitMath();
+      lockPanels();
     }
     function panelText(value, emptyLabel) {
       const text = String(value || "").trim();
       if (!text) return `<p class="empty">${emptyLabel}</p>`;
       return `<p>${escapeHtml(text)}</p>`;
+    }
+    function visibleFormulaLine() {
+      const mark = document.querySelector(".toolbar").getBoundingClientRect().bottom + 8;
+      const lines = [...document.querySelectorAll("#list article:not(.hidden)")]
+        .map(el => el.querySelector(".formula-line"))
+        .filter(Boolean);
+      let best = null;
+      let bestScore = Infinity;
+      lines.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom < mark) return;
+        const score = Math.abs(rect.top - mark);
+        if (score < bestScore) {
+          bestScore = score;
+          best = el;
+        }
+      });
+      return best;
+    }
+    function keepFormulaLine(anchor, before) {
+      if (!anchor) return;
+      const delta = anchor.getBoundingClientRect().top - before;
+      if (Math.abs(delta) < 1) return;
+      const root = document.documentElement;
+      const prev = root.style.scrollBehavior;
+      root.style.scrollBehavior = "auto";
+      window.scrollTo({ top: window.scrollY + delta, behavior: "instant" });
+      root.style.scrollBehavior = prev;
     }
     async function fetchData(maxRetries = 3) {
       let lastError = null;
@@ -207,13 +257,13 @@
                   ${panelText(item.何の定理か, "（解説なし）")}
                 </div>
                 <div class="symbol">
-                  
                   ${panelText(symbols, "（未入力）")}
                 </div>
               </div>
               <p>参照元: ${refHtml}</p>
             </article>`;
         }).join("");
+        lockPanels();
         await typeset();
       } catch (err) {
         listEl.innerHTML = `<div class="error">読み込みに失敗しました。\n${escapeHtml(err && err.message ? err.message : String(err))}</div>`;
@@ -221,8 +271,11 @@
     }
 
     modeBtn.addEventListener("click", () => {
+      const anchor = visibleFormulaLine();
+      const before = anchor ? anchor.getBoundingClientRect().top : 0;
       const on = document.body.classList.toggle("mode-symbol");
       modeBtn.textContent = on ? "解説に戻す" : "記号説明";
+      keepFormulaLine(anchor, before);
     });
     qEl.addEventListener("input", () => {
       const q = qEl.value.trim().toLowerCase();
@@ -230,7 +283,10 @@
         el.classList.toggle("hidden", !(!q || (el.dataset.q || "").includes(q)));
       });
     });
-    window.addEventListener("resize", fitMath);
+    window.addEventListener("resize", () => {
+      fitMath();
+      lockPanels();
+    });
     loadItems();
   </script>
 </body>
