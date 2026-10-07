@@ -1,942 +1,237 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>シン苫米地定理一覧</title>
-<link
-  rel="icon"
-  href="data:image/svg+xml,
-  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-    <rect width='100' height='100' rx='18' fill='%23333'/>
-    <text x='50' y='70'
-          text-anchor='middle'
-          font-family='sans-serif'
-          font-size='62'
-          font-weight='bold'
-          fill='white'>Ｔ</text>
-  </svg>"
->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23333'/><text x='50' y='70' text-anchor='middle' font-family='sans-serif' font-size='62' font-weight='bold' fill='white'>Ｔ</text></svg>">
   <style>
-    html {
-      scroll-behavior: smooth;
+    html { scroll-behavior: smooth; }
+    body { font-family: sans-serif; line-height: 1.6; max-width: 920px; margin: 12px auto; padding: 0 12px; }
+    .toolbar { position: sticky; top: 0; background: #fff; padding: 4px 0 10px; border-bottom: 1px solid #ddd; z-index: 10; }
+    .toolbar h1 { margin: 0 0 6px; font-size: 1.5em; }
+    .search-row { display: flex; align-items: center; gap: 8px; max-width: 720px; }
+    #q { flex: 1; min-width: 0; font-size: 16px; padding: 8px 10px; box-sizing: border-box; }
+    .tool-button, .reference-button {
+      display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px;
+      background: #f7f7f7; color: #333; text-decoration: none; white-space: nowrap; font-size: 14px;
+      cursor: pointer; font-family: inherit;
     }
-
-    body {
-      font-family: sans-serif;
-      line-height: 1.6;
-      max-width: 920px;
-      margin: 12px auto;
-      padding: 0 12px;
-    }
-
-    .toolbar {
-      position: sticky;
-      top: 0;
-      background: #fff;
-      padding: 4px 0 10px;
-      border-bottom: 1px solid #ddd;
-      z-index: 10;
-    }
-
-    .toolbar h1 {
-      margin: 0 0 6px;
-      font-size: 1.5em;
-    }
-
-    .search-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      max-width: 620px;
-    }
-
-    #q {
-      flex: 1;
-      min-width: 0;
-      max-width: 420px;
-      font-size: 16px;
-      padding: 8px 10px;
-      box-sizing: border-box;
-    }
-
-    .reference-button {
-      display: inline-block;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: #f7f7f7;
-      color: #333;
-      text-decoration: none;
-      white-space: nowrap;
-      font-size: 14px;
-    }
-
-    .reference-button:hover {
-      background: #eee;
-    }
-
-    #list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 16px;
-    }
-
-    article {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 16px;
-      margin: 0;
-      min-width: 0;
-      box-sizing: border-box;
-    }
-
-    .no {
-      color: #666;
-      font-size: 0.9em;
-    }
-
-    h2 {
-      margin: 4px 0 12px;
-      font-size: 1.1em;
-      overflow-wrap: anywhere;
-    }
-
-    .formula {
-      background: #f7f4ea;
-      padding: 16px 0;
-      text-align: center;
-      overflow: visible;
-    }
-
-    .formula-line {
-      margin: 0.35em 0;
-      overflow: visible;
-    }
-
-    .formula mjx-container {
-      max-width: none;
-      overflow: visible;
-    }
-
-    .formula mjx-container[display="true"] {
-      margin: 0.2em 0;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .error {
-      border: 1px solid #e0b4b4;
-      background: #fff5f5;
-      color: #a33;
-      padding: 14px;
-      margin-top: 16px;
-      border-radius: 8px;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    /* リンク */
-    #reference-links {
-      margin-top: 40px;
-      padding: 20px 16px 32px;
-      border-top: 1px solid #ddd;
-      scroll-margin-top: 80px;
-    }
-
-    #reference-links h2 {
-      margin: 0 0 20px;
-    }
-
-    .reference-group {
-      margin: 0 0 24px;
-    }
-
-    .reference-group h3 {
-      margin: 0 0 8px;
-      font-size: 1em;
-    }
-
-    .reference-group a {
-      display: block;
-      margin: 7px 0;
-      overflow-wrap: anywhere;
-    }
-
+    .tool-button:hover, .reference-button:hover { background: #eee; }
+    body.mode-symbol .tool-button { background: #333; color: #fff; border-color: #333; }
+    #list { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+    article { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 0; min-width: 0; box-sizing: border-box; }
+    .no { color: #666; font-size: 0.9em; }
+    h2 { margin: 4px 0 12px; font-size: 1.1em; overflow-wrap: anywhere; }
+    .formula { background: #f7f4ea; padding: 16px 0; text-align: center; overflow: visible; }
+    .formula-line { margin: 0.35em 0; overflow: visible; }
+    .formula mjx-container { max-width: none; overflow: visible; }
+    .formula mjx-container[display="true"] { margin: 0.2em 0; }
+    .panel { margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee; }
+    .panel-label { margin: 0 0 6px; color: #666; font-size: 0.85em; }
+    .panel p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .empty { color: #999; }
+    body.mode-symbol .explain { display: none; }
+    body:not(.mode-symbol) .symbol { display: none; }
+    .hidden { display: none; }
+    .error { border: 1px solid #e0b4b4; background: #fff5f5; color: #a33; padding: 14px; margin-top: 16px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    #page-end { height: 24px; }
     @media (max-width: 640px) {
-      body {
-        margin: 8px 0;
-        padding: 0;
-      }
-
-      .toolbar {
-        padding: 4px 12px 10px;
-      }
-
-      .toolbar h1 {
-        margin: 0 0 6px;
-        font-size: 1.35em;
-      }
-
-      .search-row {
-        gap: 6px;
-      }
-
-      .reference-button {
-        padding: 8px 10px;
-        font-size: 13px;
-      }
-
-      #list {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      article {
-        padding: 16px 0;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-      }
-
-      article .no,
-      article h2,
-      article p {
-        padding: 0 12px;
-      }
-
-      .formula {
-        padding: 16px 4px;
-      }
-
-      h2 {
-        font-size: 1.02em;
-      }
-
-      #reference-links {
-        padding: 20px 12px 32px;
-      }
+      body { margin: 8px 0; padding: 0; }
+      .toolbar { padding: 4px 12px 10px; }
+      .toolbar h1 { font-size: 1.35em; }
+      .search-row { gap: 6px; }
+      .tool-button, .reference-button { padding: 8px 10px; font-size: 13px; }
+      #list { grid-template-columns: 1fr; gap: 12px; }
+      article { padding: 16px 0; border-radius: 0; border-left: none; border-right: none; }
+      article .no, article h2, article .panel { padding: 0 12px; }
+      .formula { padding: 16px 4px; }
+      h2 { font-size: 1.02em; }
     }
   </style>
-
   <script>
     window.MathJax = {
-      tex: {
-        inlineMath: [
-          ["$", "$"],
-          ["\\(", "\\)"]
-        ],
-        displayMath: [
-          ["$$", "$$"],
-          ["\\[", "\\]"]
-        ]
-      },
-      chtml: {
-        scale: 1,
-        minScale: 0.5,
-        displayAlign: "center"
-      }
+      tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]] },
+      chtml: { scale: 1, minScale: 0.5, displayAlign: "center" }
     };
   </script>
-
-  <script
-    defer
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
-  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
-
 <body>
-
   <div class="toolbar">
     <h1>シン苫米地定理一覧</h1>
-
     <div class="search-row">
-      <input
-        id="q"
-        type="search"
-        placeholder="番号・定理名・数式・解説・参照元で検索"
-      >
-
-      <a
-        class="reference-button"
-        href="#reference-links"
-      >最下部へ</a>
+      <input id="q" type="search" placeholder="番号・定理名・数式・解説・記号で検索">
+      <button type="button" class="tool-button" id="mode">記号説明</button>
+      <a class="reference-button" href="#page-end">最下部へ</a>
     </div>
   </div>
-
   <div id="list">読み込み中...</div>
-
+  <div id="page-end"></div>
 
   <script>
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbwaF85aH0VcOZwfJL9xvr0GuzZx8xtjx45ye65_SUP9e6sKvtTPFZghtBXRDCj8ZmLo/exec";
-
+    const API_URL = "https://script.google.com/macros/s/AKfycbwnyT8hgWufp8PzUcojd6JW_b2XlLp1NqIcizma249aD3QpFNKJciFOkTZj9pWyjcmy/exec";
     const listEl = document.getElementById("list");
     const qEl = document.getElementById("q");
-
+    const modeBtn = document.getElementById("mode");
 
     function escapeHtml(s) {
-      return String(s)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
+      return String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     }
 
+    const UNICODE_ATOM = "[\\p{L}\\p{N}\\p{M}_⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+";
 
-    /*
-     * Unicode数式要素
-     */
-    const UNICODE_ATOM =
-      "[\\p{L}\\p{N}\\p{M}_⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+";
-
-
-    /*
-     * 特殊な2つの分数
-     *
-     * d[Fₚₕᵧₛ + Φ_A]/dt
-     * dS_{gen}/dt
-     */
     function convertSpecialFractions(s) {
-
-      s = s.replace(
-        /d\[Fₚₕᵧₛ\s*\+\s*Φ_A\]\/dt/gu,
-        "\\frac{d[Fₚₕᵧₛ + Φ_A]}{dt}"
-      );
-
-      s = s.replace(
-        /dS_\{gen\}\/dt/gu,
-        "\\frac{dS_{gen}}{dt}"
-      );
-
+      s = s.replace(/d\[Fₚₕᵧₛ\s*\+\s*Φ_A\]\/dt/gu, "\\frac{d[Fₚₕᵧₛ + Φ_A]}{dt}");
+      s = s.replace(/dS_\{gen\}\/dt/gu, "\\frac{dS_{gen}}{dt}");
       return s;
     }
-
-
-    /*
-     * minᵤ{...}
-     *
-     * minᵤ{A}
-     * ↓
-     * \min_{u}\left\{A\right\}
-     */
     function convertMinBraces(s) {
-
-      return s.replace(
-        /minᵤ\{([^{}]*)\}/gu,
-        "\\min_{u}\\left\\{$1\\right\\}"
-      );
+      return s.replace(/minᵤ\{([^{}]*)\}/gu, "\\min_{u}\\left\\{$1\\right\\}");
     }
-
-
-    /*
-     * T21専用：
-     * max{...} の {} を表示する
-     *
-     * p > p꜀ᵣᵢₜ = 1/(κm) max{β,B/r}
-     */
     function convertT21MaxBraces(s) {
-
-      return s.replace(
-        /max\{([^{}]*)\}/gu,
-        "\\max\\left\\{$1\\right\\}"
-      );
+      return s.replace(/max\{([^{}]*)\}/gu, "\\max\\left\\{$1\\right\\}");
     }
-
-
-    /*
-     * 偏微分
-     *
-     * ∂W_G/∂t
-     * ∂Ṽσ/∂σ
-     * ∂ℱ/∂ℓ
-     */
     function convertDerivativeFractions(s) {
-
-      const pattern =
-        new RegExp(
-          "([+-]?)∂(" +
-          UNICODE_ATOM +
-          ")\\/∂(" +
-          UNICODE_ATOM +
-          ")",
-          "gu"
-        );
-
-      return s.replace(
-        pattern,
-        (match, sign, numerator, denominator) =>
-          sign +
-          "\\frac{\\partial " +
-          numerator +
-          "}{\\partial " +
-          denominator +
-          "}"
-      );
+      const pattern = new RegExp("([+-]?)∂(" + UNICODE_ATOM + ")\\/∂(" + UNICODE_ATOM + ")", "gu");
+      return s.replace(pattern, (m, sign, numerator, denominator) => sign + "\\frac{\\partial " + numerator + "}{\\partial " + denominator + "}");
     }
-
-
-    /*
-     * 通常の微分
-     *
-     * dW/dt
-     * dW_G/dt
-     */
     function convertNormalDerivativeFractions(s) {
-
-      const pattern =
-        new RegExp(
-          "([+-]?)d(" +
-          UNICODE_ATOM +
-          ")\\/d(" +
-          UNICODE_ATOM +
-          ")",
-          "gu"
-        );
-
-      return s.replace(
-        pattern,
-        (match, sign, numerator, denominator) =>
-          sign +
-          "\\frac{d" +
-          numerator +
-          "}{d" +
-          denominator +
-          "}"
-      );
+      const pattern = new RegExp("([+-]?)d(" + UNICODE_ATOM + ")\\/d(" + UNICODE_ATOM + ")", "gu");
+      return s.replace(pattern, (m, sign, numerator, denominator) => sign + "\\frac{d" + numerator + "}{d" + denominator + "}");
     }
-
-
-    /*
-     * 差分
-     *
-     * ΔW/Δt
-     * ΔṼσ/Δσ
-     */
     function convertDeltaFractions(s) {
-
-      const pattern =
-        new RegExp(
-          "([+-]?)Δ(" +
-          UNICODE_ATOM +
-          ")\\/Δ(" +
-          UNICODE_ATOM +
-          ")",
-          "gu"
-        );
-
-      return s.replace(
-        pattern,
-        (match, sign, numerator, denominator) =>
-          sign +
-          "\\frac{\\Delta " +
-          numerator +
-          "}{\\Delta " +
-          denominator +
-          "}"
-      );
+      const pattern = new RegExp("([+-]?)Δ(" + UNICODE_ATOM + ")\\/Δ(" + UNICODE_ATOM + ")", "gu");
+      return s.replace(pattern, (m, sign, numerator, denominator) => sign + "\\frac{\\Delta " + numerator + "}{\\Delta " + denominator + "}");
     }
-
-
-    /*
-     * 括弧付き分数
-     *
-     * (a+b)/(c+d)
-     */
     function convertParenthesizedFractions(s) {
-
-      return s.replace(
-        /(\([^()]+\))\/(\([^()]+\))/gu,
-        "\\frac{$1}{$2}"
-      );
+      return s.replace(/(\([^()]+\))\/(\([^()]+\))/gu, "\\frac{$1}{$2}");
     }
-
-
-    /*
-     * 単純な分数
-     *
-     * W_G/t
-     * a/b
-     */
     function convertSimpleFractions(s) {
-
-      const pattern =
-        new RegExp(
-          "(?<![\\\\A-Za-z0-9_}])" +
-          "(" +
-          UNICODE_ATOM +
-          ")" +
-          "\\/" +
-          "(" +
-          UNICODE_ATOM +
-          ")" +
-          "(?![A-Za-z0-9_])",
-          "gu"
-        );
-
-      return s.replace(
-        pattern,
-        (match, numerator, denominator) =>
-          "\\frac{" +
-          numerator +
-          "}{" +
-          denominator +
-          "}"
-      );
+      const pattern = new RegExp("(?<![\\\\A-Za-z0-9_}])(" + UNICODE_ATOM + ")\\/(" + UNICODE_ATOM + ")(?![A-Za-z0-9_])", "gu");
+      return s.replace(pattern, (m, numerator, denominator) => "\\frac{" + numerator + "}{" + denominator + "}");
     }
-
-
-    /*
-     * Unicode下付き・上付き数字
-     */
     function convertUnicodeSubSup(s) {
-
-      const subscriptMap = {
-        "₀": "0",
-        "₁": "1",
-        "₂": "2",
-        "₃": "3",
-        "₄": "4",
-        "₅": "5",
-        "₆": "6",
-        "₇": "7",
-        "₈": "8",
-        "₉": "9"
-      };
-
-      const superscriptMap = {
-        "⁰": "0",
-        "¹": "1",
-        "²": "2",
-        "³": "3",
-        "⁴": "4",
-        "⁵": "5",
-        "⁶": "6",
-        "⁷": "7",
-        "⁸": "8",
-        "⁹": "9"
-      };
-
-
-      s = s.replace(
-        /([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([₀₁₂₃₄₅₆₇₈₉]+)/gu,
-        (match, base, sub) => {
-
-          const digits =
-            [...sub]
-              .map(ch => subscriptMap[ch] || ch)
-              .join("");
-
-          return `${base}_${digits}`;
-        }
-      );
-
-
-      return s.replace(
-        /([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/gu,
-        (match, base, sup) => {
-
-          const digits =
-            [...sup]
-              .map(ch => superscriptMap[ch] || ch)
-              .join("");
-
-          return `${base}^${digits}`;
-        }
-      );
+      const subscriptMap = { "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9" };
+      const superscriptMap = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9" };
+      s = s.replace(/([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([₀₁₂₃₄₅₆₇₈₉]+)/gu, (m, base, sub) => base + "_" + [...sub].map(ch => subscriptMap[ch] || ch).join(""));
+      return s.replace(/([A-Za-zΑ-Ωα-ωℱℓΦσμλπρτ])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/gu, (m, base, sup) => base + "^" + [...sup].map(ch => superscriptMap[ch] || ch).join(""));
     }
-
-
-    /*
-     * 数式全体の正規化
-     */
     function normalizeFormula(src) {
-
-      let s = String(src || "");
-
-      s = s.replaceAll("−", "-");
-
+      let s = String(src || "").replaceAll("−", "-");
       s = convertSpecialFractions(s);
-
       s = convertMinBraces(s);
-
       s = convertT21MaxBraces(s);
-
       s = convertDerivativeFractions(s);
-
       s = convertNormalDerivativeFractions(s);
-
       s = convertDeltaFractions(s);
-
       s = convertParenthesizedFractions(s);
-
       s = convertSimpleFractions(s);
-
       s = s.replaceAll("∂", "\\partial ");
-
       s = s.replaceAll("Δ", "\\Delta ");
-
       s = convertUnicodeSubSup(s);
-
       return s;
     }
-
-
     function toMath(src) {
-
-      return normalizeFormula(src)
-        .split(/\r?\n/)
-        .map(x => x.trim())
-        .filter(Boolean)
-        .map(line => {
-
-          const raw =
-            /\$|\\\(|\\\[|\\begin/.test(line)
-              ? line
-              : `$$${line}$$`;
-
-          return `
-            <div class="formula-line">
-              ${raw}
-            </div>
-          `;
-        })
-        .join("");
+      return normalizeFormula(src).split(/\r?\n/).map(x => x.trim()).filter(Boolean).map(line => {
+        const raw = /\$|\\\(|\\\[|\\begin/.test(line) ? line : `$$${line}$$`;
+        return `<div class="formula-line">${raw}</div>`;
+      }).join("");
     }
-
-
     function fitMath() {
-
-      document
-        .querySelectorAll(".formula mjx-container")
-        .forEach(el => {
-
-          el.style.transform = "none";
-          el.style.height = "";
-
-          const parentW =
-            el.parentElement.clientWidth;
-
-          const w =
-            el.scrollWidth;
-
-          if (!parentW || w <= parentW) {
-            return;
-          }
-
-          const scale =
-            parentW / w;
-
-          el.style.transformOrigin =
-            "center top";
-
-          el.style.transform =
-            `scale(${scale})`;
-
-          el.style.height =
-            el.getBoundingClientRect().height + "px";
-        });
+      document.querySelectorAll(".formula mjx-container").forEach(el => {
+        el.style.transform = "none";
+        el.style.height = "";
+        const parentW = el.parentElement.clientWidth;
+        const w = el.scrollWidth;
+        if (!parentW || w <= parentW) return;
+        el.style.transformOrigin = "center top";
+        el.style.transform = `scale(${parentW / w})`;
+        el.style.height = el.getBoundingClientRect().height + "px";
+      });
     }
-
-
     function typeset() {
-
-      if (
-        window.MathJax &&
-        MathJax.typesetPromise
-      ) {
-
-        return MathJax
-          .typesetPromise([listEl])
-          .then(fitMath);
-      }
-
+      if (window.MathJax && MathJax.typesetPromise) return MathJax.typesetPromise([listEl]).then(fitMath);
       fitMath();
     }
-
-
-    /*
-     * Google Apps Script
-     * 一時的なエラーには3回まで再試行
-     */
+    function panelText(value, emptyLabel) {
+      const text = String(value || "").trim();
+      if (!text) return `<p class="empty">${emptyLabel}</p>`;
+      return `<p>${escapeHtml(text)}</p>`;
+    }
     async function fetchData(maxRetries = 3) {
-
       let lastError = null;
-
-      for (
-        let attempt = 1;
-        attempt <= maxRetries;
-        attempt++
-      ) {
-
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-
-          const url =
-            API_URL +
-            (API_URL.includes("?") ? "&" : "?") +
-            "t=" +
-            Date.now();
-
-          const res =
-            await fetch(url, {
-              redirect: "follow",
-              cache: "no-store"
-            });
-
-          const text =
-            await res.text();
-
-
-          if (!res.ok) {
-
-            throw new Error(
-              `Google Apps Script が HTTP ${res.status} を返しました。`
-            );
+          const url = API_URL + (API_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
+          const res = await fetch(url, { redirect: "follow", cache: "no-store" });
+          const text = await res.text();
+          if (!res.ok) throw new Error(`Google Apps Script が HTTP ${res.status} を返しました。`);
+          const trimmed = text.trim();
+          if (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html") || trimmed.startsWith("<HTML")) {
+            throw new Error("Google Apps Script からJSONではなくHTMLが返されました。");
           }
-
-
-          const trimmed =
-            text.trim();
-
-
-          if (
-            trimmed.startsWith("<!DOCTYPE") ||
-            trimmed.startsWith("<html") ||
-            trimmed.startsWith("<HTML")
-          ) {
-
-            throw new Error(
-              "Google Apps Script からJSONではなくHTMLが返されました。"
-            );
-          }
-
-
-          const data =
-            JSON.parse(text);
-
-
-          if (!Array.isArray(data)) {
-
-            throw new Error(
-              "Google Apps Script の返却データが配列ではありません。"
-            );
-          }
-
-
+          const data = JSON.parse(text);
+          if (!Array.isArray(data)) throw new Error("Google Apps Script の返却データが配列ではありません。");
           return data;
-
         } catch (err) {
-
           lastError = err;
-
-          if (attempt === maxRetries) {
-            break;
-          }
-
-          await new Promise(
-            resolve =>
-              setTimeout(
-                resolve,
-                attempt * 1000
-              )
-          );
+          if (attempt === maxRetries) break;
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
         }
       }
-
-      throw (
-        lastError ||
-        new Error("データ取得に失敗しました。")
-      );
+      throw lastError || new Error("データ取得に失敗しました。");
     }
-
-
-    /*
-     * 一覧表示
-     */
     async function loadItems() {
-
       try {
-
-        listEl.textContent =
-          "読み込み中...";
-
-
-        const data =
-          await fetchData(3);
-
-
-        const items =
-          data.filter(
-            item =>
-              item.番号 ||
-              item.定理名
-          );
-
-
-        listEl.innerHTML =
-          items
-            .map(item => {
-
-              const id =
-                item.番号 || "";
-
-              const ref =
-                item["参照元（最新優先）"] || "";
-
-              const href =
-                item.アドレス || "";
-
-
-              const refHtml = href
-
-                ? `<a
-                    href="${href}"
-                    target="_blank"
-                    rel="noopener"
-                  >${escapeHtml(
-                    ref || href
-                  )}</a>`
-
-                : escapeHtml(ref);
-
-
-              const formula =
-                item.中心式LaTeX ||
-                item.中心式 ||
-                "";
-
-
-              /*
-               * 検索対象には数式も含める
-               */
-              const hay = [
-                item.番号,
-                item.定理名,
-                item.何の定理か,
-                ref,
-                formula
-              ]
-                .join(" ")
-                .toLowerCase();
-
-
-              return `
-                <article
-                  data-q="${hay.replace(
-                    /"/g,
-                    "&quot;"
-                  )}"
-                >
-
-                  <div class="no">
-                    ${escapeHtml(id)}
-                  </div>
-
-                  <h2>
-                    ${escapeHtml(
-                      item.定理名 || ""
-                    )}
-                  </h2>
-
-                  <div class="formula">
-                    ${toMath(formula)}
-                  </div>
-
-                  <p>
-                    ${escapeHtml(
-                      item.何の定理か || ""
-                    ).replaceAll(
-                      "\n",
-                      "<br>"
-                    )}
-                  </p>
-
-                  <p>
-                    参照元: ${refHtml}
-                  </p>
-
-                </article>
-              `;
-            })
-            .join("");
-
-
+        listEl.textContent = "読み込み中...";
+        const items = (await fetchData(3)).filter(item => item.番号 || item.定理名);
+        listEl.innerHTML = items.map(item => {
+          const id = item.番号 || "";
+          const ref = item["参照元（最新優先）"] || "";
+          const href = item.アドレス || "";
+          const symbols = item.記号説明 || "";
+          const refHtml = href
+            ? `<a href="${href}" target="_blank" rel="noopener">${escapeHtml(ref || href)}</a>`
+            : escapeHtml(ref);
+          const formula = item.中心式LaTeX || item.中心式 || "";
+          const hay = [item.番号, item.定理名, item.何の定理か, symbols, ref, formula].join(" ").toLowerCase();
+          return `
+            <article data-q="${hay.replace(/"/g, "&quot;")}">
+              <div class="no">${escapeHtml(id)}</div>
+              <h2>${escapeHtml(item.定理名 || "")}</h2>
+              <div class="formula">${toMath(formula)}</div>
+              <div class="panel">
+                <div class="explain">
+                  <div class="panel-label">何の定理か</div>
+                  ${panelText(item.何の定理か, "（解説なし）")}
+                </div>
+                <div class="symbol">
+                  <div class="panel-label">記号説明</div>
+                  ${panelText(symbols, "（未入力）")}
+                </div>
+              </div>
+              <p>参照元: ${refHtml}</p>
+            </article>`;
+        }).join("");
         await typeset();
-
       } catch (err) {
-
-        console.error(err);
-
-        listEl.innerHTML = `
-          <div class="error">
-            読み込みに失敗しました。
-
-            ${escapeHtml(
-              err && err.message
-                ? err.message
-                : String(err)
-            )}
-
-            Google Apps Script 側で一時的なエラーが
-            発生している可能性があります。
-          </div>
-        `;
+        listEl.innerHTML = `<div class="error">読み込みに失敗しました。\n${escapeHtml(err && err.message ? err.message : String(err))}</div>`;
       }
     }
 
-
+    modeBtn.addEventListener("click", () => {
+      const on = document.body.classList.toggle("mode-symbol");
+      modeBtn.textContent = on ? "解説に戻す" : "記号説明";
+    });
+    qEl.addEventListener("input", () => {
+      const q = qEl.value.trim().toLowerCase();
+      document.querySelectorAll("#list article").forEach(el => {
+        el.classList.toggle("hidden", !(!q || (el.dataset.q || "").includes(q)));
+      });
+    });
+    window.addEventListener("resize", fitMath);
     loadItems();
-
-
-    qEl.addEventListener(
-      "input",
-      () => {
-
-        const q =
-          qEl.value
-            .trim()
-            .toLowerCase();
-
-
-        document
-          .querySelectorAll(
-            "#list article"
-          )
-          .forEach(el => {
-
-            el.classList.toggle(
-              "hidden",
-              !(
-                !q ||
-                (
-                  el.dataset.q || ""
-                ).includes(q)
-              )
-            );
-
-          });
-      }
-    );
-
-
-    window.addEventListener(
-      "resize",
-      fitMath
-    );
   </script>
-
-
-  <!-- ========================================================
-       参考リンク集
-       
-       ★ このエリアは今後リンクを追加・削除するときに
-         編集しやすいよう、HTMLの一番下にまとめています。
-       ======================================================== -->
-
-  <section id="reference-links">
-  </section>
-
 </body>
 </html>
