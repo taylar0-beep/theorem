@@ -10,7 +10,7 @@
     body { font-family: sans-serif; line-height: 1.6; max-width: 920px; margin: 12px auto; padding: 0 12px; }
     .toolbar { position: sticky; top: 0; background: #fff; padding: 4px 0 10px; border-bottom: 1px solid #ddd; z-index: 10; }
     .toolbar h1 { margin: 0 0 6px; font-size: 1.5em; }
-    .search-row { display: flex; align-items: center; gap: 8px; max-width: 720px; }
+    .search-row { display: flex; align-items: center; gap: 8px; max-width: 720px; flex-wrap: wrap; }
     #q { flex: 1; min-width: 0; font-size: 16px; padding: 8px 10px; box-sizing: border-box; }
     .tool-button, .reference-button {
       display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px;
@@ -18,10 +18,14 @@
       cursor: pointer; font-family: inherit;
     }
     .tool-button:hover, .reference-button:hover { background: #eee; }
-    body.mode-symbol .tool-button { background: #333; color: #fff; border-color: #333; }
+    body.mode-symbol .tool-button#mode { background: #333; color: #fff; border-color: #333; }
+    body.mode-number-only .tool-button#number-only { background: #333; color: #fff; border-color: #333; }
     #list { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; overflow-anchor: none; }
     article { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 0; min-width: 0; box-sizing: border-box; overflow-anchor: none; }
     .no { color: #666; font-size: 0.9em; }
+    .no .en { display: none; }
+    .no .en a { color: #06c; text-decoration: none; }
+    .no .en a:hover { text-decoration: underline; }
     h2 { margin: 4px 0 12px; font-size: 1.1em; overflow-wrap: anywhere; }
     .formula { background: #f7f4ea; padding: 16px 0; text-align: center; overflow: visible; }
     .formula-line { margin: 0.35em 0; overflow: visible; }
@@ -35,6 +39,34 @@
     .hidden { display: none; }
     .error { border: 1px solid #e0b4b4; background: #fff5f5; color: #a33; padding: 14px; margin-top: 16px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
     #page-end { height: 24px; }
+
+    /* 番号のみモード */
+    body.mode-number-only #list {
+      display: block;
+      gap: 0;
+    }
+    body.mode-number-only article {
+      border: none;
+      border-radius: 0;
+      padding: 3px 0;
+      margin: 0;
+      background: transparent;
+    }
+    body.mode-number-only article h2,
+    body.mode-number-only .formula,
+    body.mode-number-only .panel {
+      display: none !important;
+    }
+    body.mode-number-only .no {
+      font-size: 1em;
+      color: #222;
+      line-height: 1.5;
+    }
+    body.mode-number-only .no .en {
+      display: inline;
+      color: #555;
+    }
+
     @media (max-width: 640px) {
       body { margin: 8px 0; padding: 0; }
       .toolbar { padding: 4px 12px 10px; }
@@ -46,6 +78,10 @@
       article .no, article h2, article .panel { padding: 0 12px; }
       .formula { padding: 16px 4px; }
       h2 { font-size: 1.02em; }
+
+      body.mode-number-only article .no {
+        padding: 0 12px;
+      }
     }
   </style>
   <script>
@@ -62,6 +98,7 @@
     <div class="search-row">
       <input id="q" type="search" placeholder="番号・定理名・数式・解説・記号で検索">
       <button type="button" class="tool-button" id="mode">記号説明</button>
+      <button type="button" class="tool-button" id="number-only">番号のみ</button>
       <a class="reference-button" href="#page-end">最下部へ</a>
     </div>
   </div>
@@ -73,6 +110,7 @@
     const listEl = document.getElementById("list");
     const qEl = document.getElementById("q");
     const modeBtn = document.getElementById("mode");
+    const numberOnlyBtn = document.getElementById("number-only");
 
     function escapeHtml(s) {
       return String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -234,30 +272,46 @@
       }
       throw lastError || new Error("データ取得に失敗しました。");
     }
+
+    // 英名から略語＋正式名称を分離してリンクを貼る
+    function createEnSpan(enName, href) {
+      if (!enName) return "";
+      // 「：」または「:」で分割（前後の空白も考慮）
+      const match = enName.match(/^(.*?)([：:])\s*(.+)$/);
+      if (match && href) {
+        const prefix = match[1] + match[2]; // 例: "BW ："
+        const formal = match[3].trim();     // 例: "BallanceWheel"
+        return `<span class="en">（${escapeHtml(prefix)}<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(formal)}</a>）</span>`;
+      } else if (href) {
+        return `<span class="en">（<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(enName)}</a>）</span>`;
+      } else {
+        return `<span class="en">（${escapeHtml(enName)}）</span>`;
+      }
+    }
+
     async function loadItems() {
       try {
         listEl.textContent = "読み込み中...";
         const items = (await fetchData(3)).filter(item => item.番号 || item.定理名);
         listEl.innerHTML = items.map(item => {
           const id = item.番号 || "";
-          const ref = item["参照元（最新優先）"] || "";
+          const enName = (item.英名 || "").trim();
           const href = item.アドレス || "";
           const symbols = item.記号説明 || "";
-          const refHtml = href
-            ? `<a href="${href}" target="_blank" rel="noopener">${escapeHtml(ref || href)}</a>`
-            : escapeHtml(ref);
           const formula = item.中心式LaTeX || item.中心式 || "";
-          const hay = [item.番号, item.定理名, item.何の定理か, symbols, ref, formula].join(" ").toLowerCase();
+          const hay = [item.番号, item.定理名, item.英名, item.何の定理か, symbols, item["参照元（最新優先）"], formula].join(" ").toLowerCase();
+
+          const enSpan = createEnSpan(enName, href);
+
           return `
             <article data-q="${hay.replace(/"/g, "&quot;")}">
-              <div class="no">${escapeHtml(id)}</div>
+              <div class="no"><span class="num">${escapeHtml(id)}</span>${enSpan}</div>
               <h2>${escapeHtml(item.定理名 || "")}</h2>
               <div class="formula">${toMath(formula)}</div>
               <div class="panel">
                 <div class="explain">${panelText(item.何の定理か, "（解説なし）")}</div>
                 <div class="symbol">${panelText(symbols, "（未入力）")}</div>
               </div>
-              <p>参照元: ${refHtml}</p>
             </article>`;
         }).join("");
         lockPanels();
@@ -268,6 +322,10 @@
     }
 
     modeBtn.addEventListener("click", () => {
+      if (document.body.classList.contains("mode-number-only")) {
+        document.body.classList.remove("mode-number-only");
+        numberOnlyBtn.textContent = "番号のみ";
+      }
       const anchor = visibleFormulaLine();
       const before = anchor ? anchor.getBoundingClientRect().top : 0;
       const on = document.body.classList.toggle("mode-symbol");
@@ -275,6 +333,20 @@
       keepFormulaLine(anchor, before);
       requestAnimationFrame(() => keepFormulaLine(anchor, before));
     });
+
+    numberOnlyBtn.addEventListener("click", () => {
+      if (document.body.classList.contains("mode-symbol")) {
+        document.body.classList.remove("mode-symbol");
+        modeBtn.textContent = "記号説明";
+      }
+      const anchor = visibleFormulaLine();
+      const before = anchor ? anchor.getBoundingClientRect().top : 0;
+      const on = document.body.classList.toggle("mode-number-only");
+      numberOnlyBtn.textContent = on ? "通常に戻す" : "番号のみ";
+      keepFormulaLine(anchor, before);
+      requestAnimationFrame(() => keepFormulaLine(anchor, before));
+    });
+
     qEl.addEventListener("input", () => {
       const q = qEl.value.trim().toLowerCase();
       document.querySelectorAll("#list article").forEach(el => {
