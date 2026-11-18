@@ -40,32 +40,15 @@
     .error { border: 1px solid #e0b4b4; background: #fff5f5; color: #a33; padding: 14px; margin-top: 16px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
     #page-end { height: 24px; }
 
-    /* 番号のみモード */
-    body.mode-number-only #list {
-      display: block;
-      gap: 0;
-    }
+    body.mode-number-only #list { display: block; gap: 0; }
     body.mode-number-only article {
-      border: none;
-      border-radius: 0;
-      padding: 3px 0;
-      margin: 0;
-      background: transparent;
+      border: none; border-radius: 0; padding: 3px 0; margin: 0; background: transparent;
     }
     body.mode-number-only article h2,
     body.mode-number-only .formula,
-    body.mode-number-only .panel {
-      display: none !important;
-    }
-    body.mode-number-only .no {
-      font-size: 1em;
-      color: #222;
-      line-height: 1.5;
-    }
-    body.mode-number-only .no .en {
-      display: inline;
-      color: #555;
-    }
+    body.mode-number-only .panel { display: none !important; }
+    body.mode-number-only .no { font-size: 1em; color: #222; line-height: 1.5; }
+    body.mode-number-only .no .en { display: inline; color: #555; }
 
     @media (max-width: 640px) {
       body { margin: 8px 0; padding: 0; }
@@ -78,19 +61,44 @@
       article .no, article h2, article .panel { padding: 0 12px; }
       .formula { padding: 16px 4px; }
       h2 { font-size: 1.02em; }
-
-      body.mode-number-only article .no {
-        padding: 0 12px;
-      }
+      body.mode-number-only article .no { padding: 0 12px; }
     }
   </style>
+
   <script>
     window.MathJax = {
-      tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]] },
-      chtml: { scale: 1, minScale: 0.5, displayAlign: "center" }
+      loader: { load: ['ui/safe'] },
+      tex: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]]
+      },
+      chtml: { scale: 1, minScale: 0.5, displayAlign: "center" },
+      options: {
+        safeOptions: {
+          allow: {
+            URLs: "safe",
+            classes: "safe",
+            cssIDs: "safe",
+            styles: "safe"
+          },
+          safeProtocols: {
+            http: true,
+            https: true,
+            file: false,
+            javascript: false,
+            data: false
+          }
+        }
+      }
     };
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <!-- MathJax 3.2.2 固定。SRIを追加する場合は integrity 属性を入れてください -->
+  <!-- ハッシュ生成例: https://www.srihash.org/ -->
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"
+    crossorigin="anonymous">
+  </script>
 </head>
 <body>
   <div class="toolbar">
@@ -105,15 +113,33 @@
   <div id="list">読み込み中...</div>
   <div id="page-end"></div>
 
+  <div style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 0.9em; color: #555;">
+    本サイトの目的は、論文中の数式をより読みやすく・美しく表示することにあります。解釈や応用は一切意図していません。<br>
+    一次資料は必ず公式のサイトで確認してください。
+  </div>
+
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwnyT8hgWufp8PzUcojd6JW_b2XlLp1NqIcizma249aD3QpFNKJciFOkTZj9pWyjcmy/exec";
+    // ※ GAS側は doGet のみ（読み取り専用）であることを確認してください
+
     const listEl = document.getElementById("list");
     const qEl = document.getElementById("q");
     const modeBtn = document.getElementById("mode");
     const numberOnlyBtn = document.getElementById("number-only");
 
     function escapeHtml(s) {
-      return String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function isSafeUrl(url) {
+      if (!url) return false;
+      const t = String(url).trim().toLowerCase();
+      return t.startsWith("http://") || t.startsWith("https://");
     }
 
     const UNICODE_ATOM = "[\\p{L}\\p{N}\\p{M}_⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+";
@@ -180,12 +206,15 @@
       s = convertUnicodeSubSup(s);
       return s;
     }
+
     function toMath(src) {
       return normalizeFormula(src).split(/\r?\n/).map(x => x.trim()).filter(Boolean).map(line => {
-        const raw = /\$|\\\(|\\\[|\\begin/.test(line) ? line : `$$${line}$$`;
+        let raw = /\$|\\\(|\\\[|\\begin/.test(line) ? line : `$$${line}$$`;
+        raw = escapeHtml(raw);
         return `<div class="formula-line">${raw}</div>`;
       }).join("");
     }
+
     function fitMath() {
       document.querySelectorAll(".formula mjx-container").forEach(el => {
         el.style.transform = "none";
@@ -273,17 +302,17 @@
       throw lastError || new Error("データ取得に失敗しました。");
     }
 
-    // 英名から略語＋正式名称を分離してリンクを貼る
     function createEnSpan(enName, href) {
       if (!enName) return "";
-      // 「：」または「:」で分割（前後の空白も考慮）
+      const trimmedHref = String(href || "").trim();
+      const safeHref = isSafeUrl(trimmedHref) ? escapeHtml(trimmedHref) : "";
       const match = enName.match(/^(.*?)([：:])\s*(.+)$/);
-      if (match && href) {
-        const prefix = match[1] + match[2]; // 例: "BW ："
-        const formal = match[3].trim();     // 例: "BallanceWheel"
-        return `<span class="en">（${escapeHtml(prefix)}<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(formal)}</a>）</span>`;
-      } else if (href) {
-        return `<span class="en">（<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(enName)}</a>）</span>`;
+      if (match && safeHref) {
+        const prefix = match[1] + match[2];
+        const formal = match[3].trim();
+        return `<span class="en">（${escapeHtml(prefix)}<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${escapeHtml(formal)}</a>）</span>`;
+      } else if (safeHref) {
+        return `<span class="en">（<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${escapeHtml(enName)}</a>）</span>`;
       } else {
         return `<span class="en">（${escapeHtml(enName)}）</span>`;
       }
@@ -304,7 +333,7 @@
           const enSpan = createEnSpan(enName, href);
 
           return `
-            <article data-q="${hay.replace(/"/g, "&quot;")}">
+            <article data-q="${escapeHtml(hay)}">
               <div class="no"><span class="num">${escapeHtml(id)}</span>${enSpan}</div>
               <h2>${escapeHtml(item.定理名 || "")}</h2>
               <div class="formula">${toMath(formula)}</div>
@@ -361,5 +390,3 @@
   </script>
 </body>
 </html>
-<div>本サイトの目的は、論文中の数式をより読みやすく・美しく表示することにあります。解釈や応用は一切意図していません。</div>
-一次資料は必ず公式のサイトで確認してください。
